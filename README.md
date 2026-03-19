@@ -7,7 +7,7 @@ Zero-overhead binary serialization w/ C++26 Reflection support
 ## Motivation
 
 I have been hearing a lot about C++26's reflections and wanted to check it out.
-But I was primarily inspired by [Barry Revzin's Practical Reflection at CppCon25](https://www.youtube.com/watch?v=ZX_z6wzEOG0) and his recommendation of using reflections to achieve performance reliable systems
+But I was primarily inspired by [Barry Revzin's Practical Reflection at CppCon25](https://www.youtube.com/watch?v=ZX_z6wzEOG0) and his challenge to see how we can use reflections to solve problems.
 
 ## Resources
 - [P2996R12 Paper](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2025/p2996r12.html#selecting-members) 
