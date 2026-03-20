@@ -26,6 +26,8 @@ But I was primarily inspired by [Barry Revzin's Practical Reflection at CppCon25
    from P2996
 5. `std::define_static_array` - takes a range and materialize a span for compile
    time (consteval). Needed this for `template for` 
+6. `std::meta::size_of` why this over `sizeof`? Simply because sizeof
+   accomodates for padded bytes whilst meta::size_of is raw number of bytes
 
 ## Difficulties faced
 
