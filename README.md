@@ -4,6 +4,25 @@
 
 Zero-overhead binary serialization w/ C++26 Reflection support
 
+## Example
+
+```cpp
+#include "static_serial.hpp"
+
+auto bid = OrderBookLevel{
+    .price       = 17250, // int64  - 8B
+    .quantity    = 500,   // uint64 - 8B
+    .order_count = 3      // uint32 - 4B
+};
+
+auto raw_bytes = stse::serialize(bid);
+auto restored  = stse::deserialize<OrderBookLevel>(raw_bytes);
+
+assert(bid == restored);
+assert(raw_bytes != sizeof(OrderBookLevel));
+assert(raw_bytes == 20); // exclude padding
+```
+
 ## Motivation
 
 I have been hearing a lot about C++26's reflections and wanted to check it out.
