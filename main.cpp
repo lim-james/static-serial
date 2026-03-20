@@ -3,6 +3,8 @@
 #include <array>
 #include <bit>
 #include <span>
+#include <tuple>
+#include <type_traits>
 
 #include <meta>
 
@@ -17,22 +19,35 @@ struct Vec3 {
 struct Player {
     uint32_t id;
     Vec3 pos;
-    // std::array<int, 4> inventory;
+    std::array<int, 4> inventory;
 
     bool operator==(const Player&) const = default;
 };
 
 template<typename T>
-concept SerializableBase = std::meta::is_trivially_copyable_type(^^T);
-
-// WIP: intend to encode std::array
-template<typename T>
-concept SerializableArray = SerializableBase<T> && std::meta::is_array_type(^^T);
+concept SerializableScalar = std::is_scalar_v<T>;
 
 template<typename T>
-concept SerializableObject = SerializableBase<T> && std::meta::is_aggregate_type(^^T) && !SerializableArray<T>;
+concept SerializableCArray = std::is_array_v<T> &&
+                             std::is_trivially_copyable_v<std::remove_all_extents_t<T>>;
 
-template<SerializableBase T>
+template<typename T>
+concept SerializableStdArray = requires {
+    typename T::value_type;
+    std::tuple_size_v<T>;
+} && std::is_trivially_copyable_v<typename T::value_type>;
+
+template<typename T>
+concept SerializableArray = SerializableCArray<T> || SerializableStdArray<T>;
+
+template<typename T>
+concept SerializableAggregate = std::is_trivially_copyable_v<T> && 
+                                std::is_aggregate_v<T> &&
+                                !SerializableScalar<T> &&
+                                !SerializableArray<T>;
+
+
+template<SerializableScalar T>
 constexpr std::span<std::byte> serialize(std::span<std::byte> destination, const T& source) {
     static constexpr std::size_t value_byte_count = std::meta::size_of(^^T);
     using value_buffer_t = std::array<std::byte, value_byte_count>;
@@ -45,9 +60,14 @@ constexpr std::span<std::byte> serialize(std::span<std::byte> destination, const
     return destination.subspan(value_byte_count);
 }
 
-template<SerializableObject T>
+template<SerializableArray T>
 constexpr std::span<std::byte> serialize(std::span<std::byte> destination, const T& source) {
-    static constexpr std::size_t value_byte_count = std::meta::size_of(^^T);
+    for (const auto& item: source) destination = serialize(destination, item);
+    return destination;
+}
+
+template<SerializableAggregate T>
+constexpr std::span<std::byte> serialize(std::span<std::byte> destination, const T& source) {
     static constexpr auto data_members = std::define_static_array(
         std::meta::nonstatic_data_members_of(^^T, std::meta::access_context::current())
     );
@@ -66,7 +86,7 @@ constexpr auto serialize(const T& data) -> std::array<std::byte, std::meta::size
     return buffer;
 }
 
-template<SerializableBase T>
+template<SerializableScalar T>
 constexpr std::span<const std::byte> deserialize(T& destination, std::span<const std::byte> source) {
     static constexpr std::size_t value_byte_count = std::meta::size_of(^^T);
 
@@ -83,9 +103,15 @@ constexpr std::span<const std::byte> deserialize(T& destination, std::span<const
     return source.subspan(value_byte_count);
 }
 
-template<SerializableObject T>
+
+template<SerializableArray T>
 constexpr std::span<const std::byte> deserialize(T& destination, std::span<const std::byte> source) {
-    static constexpr std::size_t value_byte_count = std::meta::size_of(^^T);
+    for (auto& item: destination) source = deserialize(item, source);
+    return source;
+}
+
+template<SerializableAggregate T>
+constexpr std::span<const std::byte> deserialize(T& destination, std::span<const std::byte> source) {
     static constexpr auto data_members = std::define_static_array(
         std::meta::nonstatic_data_members_of(^^T, std::meta::access_context::current())
     );
@@ -123,10 +149,13 @@ int main() {
     static constexpr Vec3 position{.x = 0.1, .y = 0.2, .z = 0.3};
     static_assert(test_back_and_forth<position>(), "Back-&-Forth serialization failed");
 
+    static constexpr std::array arr{1, 2, 3, 4, 5};
+    static_assert(test_back_and_forth<arr>(), "Back-&-Forth serialization failed");
+
     static constexpr Player player{
         .id = 0, 
-        .pos = Vec3{.x = 0.1, .y = 0.2, .z = 0.3}
-        // .inventory = {1, 2, 3, 4}
+        .pos = Vec3{.x = 0.1, .y = 0.2, .z = 0.3},
+        .inventory = {1, 2, 3, 4}
     };
     static_assert(test_back_and_forth<player>(), "Back-&-Forth serialization failed");
 }
