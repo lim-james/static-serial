@@ -41,7 +41,7 @@ concept SerializableCArray = std::is_array_v<T> &&
 template<typename T>
 concept SerializableStdArray = requires {
     typename T::value_type;
-    std::tuple_size_v<T>;
+    typename std::tuple_size<T>::type;
 } && std::is_trivially_copyable_v<typename T::value_type>;
 
 template<typename T>
