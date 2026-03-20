@@ -16,6 +16,13 @@ struct Vec3 {
     bool operator==(const Vec3&) const = default;
 };
 
+struct PaddedStruct {
+    char a;
+    std::uint64_t b;
+
+    bool operator==(const PaddedStruct&) const = default;
+};
+
 struct Player {
     uint32_t id;
     Vec3 pos;
@@ -46,10 +53,38 @@ concept SerializableAggregate = std::is_trivially_copyable_v<T> &&
                                 !SerializableScalar<T> &&
                                 !SerializableArray<T>;
 
+template<SerializableScalar T>
+consteval std::size_t size_of() { return std::meta::size_of(^^T); }
+
+template<SerializableCArray T>
+consteval std::size_t size_of() { 
+    return std::extent_v<T> * size_of<std::remove_all_extents_t<T>>();
+}
+
+template<SerializableStdArray T>
+consteval std::size_t size_of() { 
+    return std::tuple_size_v<T> * size_of<typename T::value_type>();
+}
+
+template<SerializableAggregate T>
+consteval std::size_t size_of() { 
+    static constexpr auto data_members = std::define_static_array(
+        std::meta::nonstatic_data_members_of(^^T, std::meta::access_context::current())
+    );
+
+    std::size_t total = 0;
+    template for (constexpr auto member : data_members) {
+        total += size_of<typename[:std::meta::type_of(member):]>();
+    }
+    return total;
+}
+
+template<typename T>
+inline constexpr std::size_t raw_size = size_of<T>();
 
 template<SerializableScalar T>
 constexpr std::span<std::byte> serialize(std::span<std::byte> destination, const T& source) {
-    static constexpr std::size_t value_byte_count = std::meta::size_of(^^T);
+    static constexpr std::size_t value_byte_count = raw_size<T>;
     using value_buffer_t = std::array<std::byte, value_byte_count>;
     auto bytes = std::bit_cast<value_buffer_t>(source);
 
@@ -80,16 +115,15 @@ constexpr std::span<std::byte> serialize(std::span<std::byte> destination, const
 }
 
 template<typename T> 
-constexpr auto serialize(const T& data) -> std::array<std::byte, std::meta::size_of(^^T)> {
-    auto buffer = std::array<std::byte, std::meta::size_of(^^T)>{};
+[[nodiscard]] constexpr auto serialize(const T& data) -> std::array<std::byte, raw_size<T>> {
+    auto buffer = std::array<std::byte, raw_size<T>>{};
     serialize(buffer, data);
     return buffer;
 }
 
 template<SerializableScalar T>
 constexpr std::span<const std::byte> deserialize(T& destination, std::span<const std::byte> source) {
-    static constexpr std::size_t value_byte_count = std::meta::size_of(^^T);
-
+    static constexpr std::size_t value_byte_count = raw_size<T>;
     using value_buffer_t = std::array<std::byte, value_byte_count>;
     value_buffer_t buffer;
 
@@ -151,6 +185,12 @@ int main() {
 
     static constexpr std::array arr{1, 2, 3, 4, 5};
     static_assert(test_back_and_forth<arr>(), "Back-&-Forth serialization failed");
+    
+    static constexpr PaddedStruct padded{'a', 0};
+    constexpr auto bytes = serialize(padded);
+    static_assert(bytes.size() != sizeof(PaddedStruct));
+    static_assert(bytes.size() == 9);
+    static_assert(deserialize<PaddedStruct>(bytes) == padded);
 
     static constexpr Player player{
         .id = 0, 
