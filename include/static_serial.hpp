@@ -31,13 +31,28 @@ concept SerializableAggregate = std::is_trivially_copyable_v<T> &&
 template<typename T>
 concept NotSerializable = std::is_pointer_v<T> || std::is_null_pointer_v<T>;
 
+template<SerializableScalar T>    consteval std::size_t size_of();
+template<SerializableStdArray T>  consteval std::size_t size_of();
+template<SerializableAggregate T> consteval std::size_t size_of();
+
+template<SerializableScalar T>
+constexpr std::span<std::byte> serialize(std::span<std::byte>, const T&);
+template<SerializableStdArray T>
+constexpr std::span<std::byte> serialize(std::span<std::byte>, const T&);
+template<SerializableAggregate T>
+constexpr std::span<std::byte> serialize(std::span<std::byte>, const T&);
+template<NotSerializable T>
+constexpr std::span<std::byte> serialize(std::span<std::byte>, const T&) = delete("Type not supported for static serialization");
+
+template<SerializableScalar T>
+constexpr std::span<const std::byte> deserialize(T&, std::span<const std::byte>);
+template<SerializableStdArray T>
+constexpr std::span<const std::byte> deserialize(T&, std::span<const std::byte>);
+template<SerializableAggregate T>
+constexpr std::span<const std::byte> deserialize(T&, std::span<const std::byte>);
+
 template<SerializableScalar T>
 consteval std::size_t size_of() { return std::meta::size_of(^^T); }
-
-template<SerializableStdArray T>
-consteval std::size_t size_of() { 
-    return std::tuple_size_v<T> * size_of<typename T::value_type>();
-}
 
 template<SerializableAggregate T>
 consteval std::size_t size_of() { 
@@ -52,12 +67,13 @@ consteval std::size_t size_of() {
     return total;
 }
 
+template<SerializableStdArray T>
+consteval std::size_t size_of() { 
+    return std::tuple_size_v<T> * size_of<typename T::value_type>();
+}
+
 template<typename T>
 inline constexpr std::size_t raw_size = size_of<T>();
-
-
-template<NotSerializable T>
-constexpr std::span<std::byte> serialize(std::span<std::byte>, const T&) = delete("Type not supported for static serialization");
 
 template<SerializableScalar T>
 constexpr std::span<std::byte> serialize(std::span<std::byte> destination, const T& source) {
@@ -72,12 +88,6 @@ constexpr std::span<std::byte> serialize(std::span<std::byte> destination, const
     return destination.subspan(value_byte_count);
 }
 
-template<SerializableStdArray T>
-constexpr std::span<std::byte> serialize(std::span<std::byte> destination, const T& source) {
-    for (const auto& item: source) destination = serialize(destination, item);
-    return destination;
-}
-
 template<SerializableAggregate T>
 constexpr std::span<std::byte> serialize(std::span<std::byte> destination, const T& source) {
     static constexpr auto data_members = std::define_static_array(
@@ -88,6 +98,12 @@ constexpr std::span<std::byte> serialize(std::span<std::byte> destination, const
         destination = serialize(destination, source.[:member:]);
     }
 
+    return destination;
+}
+
+template<SerializableStdArray T>
+constexpr std::span<std::byte> serialize(std::span<std::byte> destination, const T& source) {
+    for (const auto& item: source) destination = serialize(destination, item);
     return destination;
 }
 
@@ -107,13 +123,6 @@ constexpr std::span<const std::byte> deserialize(T& destination, std::span<const
     return source.subspan(value_byte_count);
 }
 
-
-template<SerializableStdArray T>
-constexpr std::span<const std::byte> deserialize(T& destination, std::span<const std::byte> source) {
-    for (auto& item: destination) source = deserialize(item, source);
-    return source;
-}
-
 template<SerializableAggregate T>
 constexpr std::span<const std::byte> deserialize(T& destination, std::span<const std::byte> source) {
     static constexpr auto data_members = std::define_static_array(
@@ -124,6 +133,12 @@ constexpr std::span<const std::byte> deserialize(T& destination, std::span<const
         source = deserialize(destination.[:member:], source);
     }
 
+    return source;
+}
+
+template<SerializableStdArray T>
+constexpr std::span<const std::byte> deserialize(T& destination, std::span<const std::byte> source) {
+    for (auto& item: destination) source = deserialize(item, source);
     return source;
 }
 
