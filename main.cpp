@@ -22,8 +22,9 @@ struct Player {
     bool operator==(const Player&) const = default;
 };
 
-constexpr std::span<std::byte> constexpr_memcpy(std::span<std::byte> destination, const auto& source) {
-    constexpr std::size_t value_byte_count = sizeof(source);
+template<typename T>
+constexpr std::span<std::byte> constexpr_memcpy(std::span<std::byte> destination, const T& source) {
+    constexpr std::size_t value_byte_count = std::meta::size_of(^^T);
     using value_buffer_t = std::array<std::byte, value_byte_count>;
     auto bytes = std::bit_cast<value_buffer_t>(source);
 
@@ -36,7 +37,7 @@ constexpr std::span<std::byte> constexpr_memcpy(std::span<std::byte> destination
 
 template<typename T>
 constexpr std::span<const std::byte> constexpr_memcpy(T& destination, std::span<const std::byte> source) {
-    constexpr std::size_t value_byte_count = sizeof(T);
+    constexpr std::size_t value_byte_count = std::meta::size_of(^^T);
 
     using value_buffer_t = std::array<std::byte, value_byte_count>;
     value_buffer_t buffer;
@@ -52,12 +53,12 @@ constexpr std::span<const std::byte> constexpr_memcpy(T& destination, std::span<
 }
 
 template<typename T> // constraint
-constexpr auto serialize(const T& data) -> std::array<std::byte, sizeof(T)> {
+constexpr auto serialize(const T& data) -> std::array<std::byte, std::meta::size_of(^^T)> {
     static constexpr auto data_members = std::define_static_array(
         std::meta::nonstatic_data_members_of(^^T, std::meta::access_context::current())
     );
 
-    auto buffer = std::array<std::byte, sizeof(T)>{};
+    auto buffer = std::array<std::byte, std::meta::size_of(^^T)>{};
     std::span<std::byte> buffer_ptr = buffer;
 
     template for (constexpr auto member : data_members) {
@@ -108,5 +109,7 @@ int main() {
         .pos = Vec3{.x = 0.1, .y = 0.2, .z = 0.3},
         .inventory = {1, 2, 3, 4}
     };
+
+    //std::meta::is_compound_type
 }
 
