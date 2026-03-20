@@ -56,3 +56,7 @@ to learn.
 1. Compiler & P-Paper interface mismatch. p-paper describes `member_of(info
    r)` whilst the compiler takes in an additional parameter `access_context`
    - Overcomed by referrencing header files directly
+2. `members_of` returns a vector which is heap allocated with new. Doesn't work
+   directly at compile time esp template for. 
+    - Use define_static_array which takes in a range and extracts compile time
+    information
