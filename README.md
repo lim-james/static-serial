@@ -19,8 +19,8 @@ auto raw_bytes = stse::serialize(bid);
 auto restored  = stse::deserialize<OrderBookLevel>(raw_bytes);
 
 assert(bid == restored);
-assert(raw_bytes != sizeof(OrderBookLevel));
-assert(raw_bytes == 20); // exclude padding
+assert(raw_bytes.size() != sizeof(OrderBookLevel));
+assert(raw_bytes.size() == 20); // exclude padding
 ```
 
 ## Motivation
