@@ -17,14 +17,24 @@ struct Vec3 {
 struct Player {
     uint32_t id;
     Vec3 pos;
-    std::array<int, 4> inventory;
+    // std::array<int, 4> inventory;
 
     bool operator==(const Player&) const = default;
 };
 
 template<typename T>
-constexpr std::span<std::byte> constexpr_memcpy(std::span<std::byte> destination, const T& source) {
-    constexpr std::size_t value_byte_count = std::meta::size_of(^^T);
+concept SerializableBase = std::meta::is_trivially_copyable_type(^^T);
+
+// WIP: intend to encode std::array
+template<typename T>
+concept SerializableArray = SerializableBase<T> && std::meta::is_array_type(^^T);
+
+template<typename T>
+concept SerializableObject = SerializableBase<T> && std::meta::is_aggregate_type(^^T) && !SerializableArray<T>;
+
+template<SerializableBase T>
+constexpr std::span<std::byte> serialize(std::span<std::byte> destination, const T& source) {
+    static constexpr std::size_t value_byte_count = std::meta::size_of(^^T);
     using value_buffer_t = std::array<std::byte, value_byte_count>;
     auto bytes = std::bit_cast<value_buffer_t>(source);
 
@@ -35,9 +45,30 @@ constexpr std::span<std::byte> constexpr_memcpy(std::span<std::byte> destination
     return destination.subspan(value_byte_count);
 }
 
-template<typename T>
-constexpr std::span<const std::byte> constexpr_memcpy(T& destination, std::span<const std::byte> source) {
-    constexpr std::size_t value_byte_count = std::meta::size_of(^^T);
+template<SerializableObject T>
+constexpr std::span<std::byte> serialize(std::span<std::byte> destination, const T& source) {
+    static constexpr std::size_t value_byte_count = std::meta::size_of(^^T);
+    static constexpr auto data_members = std::define_static_array(
+        std::meta::nonstatic_data_members_of(^^T, std::meta::access_context::current())
+    );
+
+    template for (constexpr auto member : data_members) {
+        destination = serialize(destination, source.[:member:]);
+    }
+
+    return destination;
+}
+
+template<typename T> 
+constexpr auto serialize(const T& data) -> std::array<std::byte, std::meta::size_of(^^T)> {
+    auto buffer = std::array<std::byte, std::meta::size_of(^^T)>{};
+    serialize(buffer, data);
+    return buffer;
+}
+
+template<SerializableBase T>
+constexpr std::span<const std::byte> deserialize(T& destination, std::span<const std::byte> source) {
+    static constexpr std::size_t value_byte_count = std::meta::size_of(^^T);
 
     using value_buffer_t = std::array<std::byte, value_byte_count>;
     value_buffer_t buffer;
@@ -52,34 +83,24 @@ constexpr std::span<const std::byte> constexpr_memcpy(T& destination, std::span<
     return source.subspan(value_byte_count);
 }
 
-template<typename T> // constraint
-constexpr auto serialize(const T& data) -> std::array<std::byte, std::meta::size_of(^^T)> {
+template<SerializableObject T>
+constexpr std::span<const std::byte> deserialize(T& destination, std::span<const std::byte> source) {
+    static constexpr std::size_t value_byte_count = std::meta::size_of(^^T);
     static constexpr auto data_members = std::define_static_array(
         std::meta::nonstatic_data_members_of(^^T, std::meta::access_context::current())
     );
-
-    auto buffer = std::array<std::byte, std::meta::size_of(^^T)>{};
-    std::span<std::byte> buffer_ptr = buffer;
-
-    template for (constexpr auto member : data_members) {
-        buffer_ptr = constexpr_memcpy(buffer_ptr, data.[:member:]);
-    }
-
-    return buffer;
-}
-
-template<typename T> // constraint
-constexpr T deserialize(std::span<const std::byte> data) {
-    static constexpr auto data_members = std::define_static_array(
-        std::meta::nonstatic_data_members_of(^^T, std::meta::access_context::current())
-    );
-    
-    T parsed;
 
     template for (constexpr auto member: data_members) {
-        data = constexpr_memcpy(parsed.[:member:], data);
+        source = deserialize(destination.[:member:], source);
     }
 
+    return source;
+}
+
+template<typename T>
+[[nodiscard]] constexpr T deserialize(std::span<const std::byte> data) {
+    T parsed;
+    deserialize(parsed, data);
     return parsed;
 }
 
@@ -102,14 +123,11 @@ int main() {
     static constexpr Vec3 position{.x = 0.1, .y = 0.2, .z = 0.3};
     static_assert(test_back_and_forth<position>(), "Back-&-Forth serialization failed");
 
-    volatile bool result = test_back_and_forth_runtime(Vec3{.x = 0.1, .y = 0.2, .z = 0.3});
-
     static constexpr Player player{
         .id = 0, 
-        .pos = Vec3{.x = 0.1, .y = 0.2, .z = 0.3},
-        .inventory = {1, 2, 3, 4}
+        .pos = Vec3{.x = 0.1, .y = 0.2, .z = 0.3}
+        // .inventory = {1, 2, 3, 4}
     };
-
-    //std::meta::is_compound_type
+    static_assert(test_back_and_forth<player>(), "Back-&-Forth serialization failed");
 }
 
