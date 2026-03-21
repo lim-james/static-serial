@@ -8,7 +8,7 @@ struct Vec3 {
     bool operator==(const Vec3&) const = default;
 };
 
-static constexpr Vec3 position{.x = 0.1, .y = 0.2, .z = 0.3};
+static constexpr Vec3 position{.x = 0.1f, .y = 0.2f, .z = 0.3f};
 static_assert(stse::test::test_back_and_forth<position>(), "Back-&-Forth failed for Aggregate Types");
 
 ///
@@ -25,7 +25,7 @@ struct Player {
 
 static constexpr Player player{
     .id = 0, 
-    .pos = Vec3{.x = 0.1, .y = 0.2, .z = 0.3},
+    .pos = Vec3{.x = 0.1f, .y = 0.2f, .z = 0.3f},
     .inventory = {1, 2, 3, 4}
 };
 static_assert(stse::test::test_back_and_forth<player>(), "Back-&-Forth failed for Nested Types");
