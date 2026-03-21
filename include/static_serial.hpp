@@ -104,7 +104,7 @@ template<SerializableScalar T, EndianType Endian>
 constexpr std::span<std::byte> serialize(
     std::span<std::byte> destination, 
     const T& source,
-    Endian endianness
+    [[maybe_unused]] Endian endianness
 ) {
     static constexpr std::size_t value_byte_count = raw_size<T>;
     using value_buffer_t = std::array<std::byte, value_byte_count>;
@@ -159,7 +159,7 @@ template<SerializableScalar T, EndianType Endian>
 constexpr std::span<const std::byte> deserialize(
     T& destination, 
     std::span<const std::byte> source,
-    Endian endianness
+    [[maybe_unused]] Endian endianness
 ) {
     static constexpr std::size_t value_byte_count = raw_size<T>;
     using value_buffer_t = std::array<std::byte, value_byte_count>;
