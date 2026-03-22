@@ -84,3 +84,6 @@ to learn.
    directly at compile time esp template for. 
     - Use define_static_array which takes in a range and extracts compile time
     information
+3. Using a recursive serializer leads to some really ugly error messages when an
+   invalid type is deeply nested in a type.
+   - Fixed it by introducing `is_serializable` check at the start of serializing
