@@ -35,6 +35,18 @@ assert(raw_bytes.size() == 20); // excludes padding
 | Nested structs | |
 
 
+## Zero-overhead Verification
+
+Compiled with GCC 16 `-O2`
+
+
+| Metric          | `-O0`  | `-O2` |
+|-----------------|--------|-------|
+| Function calls  | 94     | 3     |
+| Loop labels     | 76     | 1     |
+| Assembly lines  | 2494   | 446   |
+
+
 ## Motivation
 
 I have been hearing a lot about C++26's reflections and wanted to check it out.
