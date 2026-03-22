@@ -29,7 +29,7 @@ assert(raw_bytes.size() == 20); // excludes padding
 
 | Serializable | Non-Serializable |
 | --- | --- |
-| Scalar types | Pointers |
+| Scalar types | Pointers (& std::nullptr_t) |
 | std::array with trivially copyable types | std::vector (any dynamically sized container |
 | Aggregated structs | |
 | Nested structs | |
@@ -87,3 +87,9 @@ to learn.
 3. Using a recursive serializer leads to some really ugly error messages when an
    invalid type is deeply nested in a type.
    - Fixed it by introducing `is_serializable` check at the start of serializing
+4. Static assert messages are a little vague
+    - Waiting for constexpr std::format [P3391](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2024/p3391r0.html)
+
+## Known issues
+
+1. std::tuple & std::pair support
