@@ -1,5 +1,7 @@
 #include "static_serial_test.hpp"
 
+#include <utility>
+
 struct Vec3 {
     float x;
     float y;
@@ -29,3 +31,6 @@ static constexpr Player player{
     .inventory = {1, 2, 3, 4}
 };
 static_assert(stse::test::test_back_and_forth<player>(), "Back-&-Forth failed for Nested Types");
+
+static constexpr std::pair std_pair{1, 2};
+static_assert(stse::test::test_back_and_forth<std_pair>(), "Back-&-Forth failed for std::pair");

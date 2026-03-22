@@ -46,9 +46,7 @@ concept SerializableStdArray = requires {
 } && std::is_trivially_copyable_v<typename T::value_type>;
 
 template<typename T>
-concept SerializableAggregate = std::is_trivially_copyable_v<T> && 
-                                std::is_aggregate_v<T> &&
-                                !SerializableScalar<T> &&
+concept SerializableAggregate = !SerializableScalar<T> &&
                                 !SerializableStdArray<T>;
 
 template<typename T>

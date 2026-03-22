@@ -30,8 +30,9 @@ assert(raw_bytes.size() == 20); // excludes padding
 | Serializable | Non-Serializable |
 | --- | --- |
 | Scalar types | Pointers (& std::nullptr_t) |
-| std::array with trivially copyable types | std::vector (any dynamically sized container |
-| Aggregated structs | |
+| std::array with trivially copyable types | std::vector (any dynamically sized container) |
+| std::pair with trivially copyable types | std::tuple |
+| Aggregated structs | std::string |
 | Nested structs | |
 
 
