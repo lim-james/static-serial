@@ -1,5 +1,6 @@
 #include <cstdint>
 #include <array>
+#include <print>
 
 #include "static_serial.hpp"
 
@@ -58,5 +59,8 @@ int main() {
     auto raw_bytes = stse::serialize(snapshot);
     auto restored_snapshot = stse::deserialize<MarketSnapshot>(raw_bytes);
     assert(snapshot == restored_snapshot);
+
+    std::string schema = stse::schema<MarketSnapshot>();
+    std::print("{}", schema);
 }
 

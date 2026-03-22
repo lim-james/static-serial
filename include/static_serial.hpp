@@ -9,7 +9,8 @@
 #include <tuple>
 #include <type_traits>
 #include <cassert>
-#include <algorithm>
+#include <string>
+#include <format>
 
 #include <meta>
 
@@ -76,6 +77,15 @@ constexpr std::span<const std::byte> deserialize(T&, std::span<const std::byte>,
 template<NotSerializable T, EndianType Endian>
 constexpr std::span<const std::byte> deserialize(T&, std::span<const std::byte>, Endian)
     = delete("Type not supported for static serialization");
+
+template<SerializableScalar T, std::uint8_t depth>
+std::string generate_schema();
+template<SerializableStdArray T, std::uint8_t depth>
+std::string generate_schema();
+template<SerializableAggregate T, std::uint8_t depth>
+std::string generate_schema();
+template<NotSerializable T, std::uint8_t depth>
+std::string generate_schema() = delete("Type not supported for static serialization");
 
 template<SerializableScalar T>
 consteval std::size_t size_of() { return std::meta::size_of(^^T); }
@@ -212,6 +222,65 @@ constexpr std::span<const std::byte> deserialize(
     for (auto& item: destination) source = deserialize(item, source, endianness);
     return source;
 }
+
+template<std::uint8_t depth>
+std::string pad() {
+    std::array<char, depth * 2> padding;
+    padding.fill(' ');
+    return std::string(padding.begin(), padding.size());
+}
+
+template<typename T>
+std::string type_header() {
+    constexpr auto type = std::meta::display_string_of(^^T);
+    return std::format("[{} :: {} bytes]", type, raw_size<T>);
+}
+
+template<SerializableScalar T, std::uint8_t depth>
+std::string generate_schema() {
+    return type_header<T>();
+}
+
+template<SerializableStdArray T, std::uint8_t depth>
+std::string generate_schema() {
+    auto schema_out = type_header<T>();
+
+    using child_type = typename T::value_type;
+    constexpr auto identifier = std::meta::identifier_of(^^child_type);
+    auto meta_data  = generate_schema<child_type, depth + 1>();
+    schema_out += std::format(
+        "\n{}{}: {}",
+        pad<depth + 1>(),
+        identifier,
+        meta_data 
+    );
+
+    return schema_out;
+}
+
+template<SerializableAggregate T, std::uint8_t depth>
+std::string generate_schema() {
+    static constexpr auto data_members = std::define_static_array(
+        std::meta::nonstatic_data_members_of(^^T, std::meta::access_context::current())
+    );
+
+    constexpr auto fields = data_members.size();
+    std::string schema_out = std::format("{} [{} fields]", type_header<T>(), fields);
+
+    template for (constexpr auto member: data_members) {
+        constexpr auto identifier = std::meta::identifier_of(member);
+        auto meta_data  = generate_schema<typename[:std::meta::type_of(member):], depth + 1>();
+        schema_out += std::format(
+            "\n{}{}: {}",
+            pad<depth + 1>(),
+            identifier,
+            meta_data 
+        );
+    }
+
+    return schema_out;
+}
+
 }
 
 inline constexpr BigEndian    big_endian{};
@@ -265,6 +334,15 @@ template<typename T, EndianType Endian = NativeEndian>
         return parsed;
     } else {
         static_assert(is_serializable<T>(), "Type not deserializable.");
+    }
+}
+
+template<typename T>
+std::string schema() {
+    if constexpr (is_serializable<T>()) {
+        return generate_schema<T, 0>();
+    } else {
+        return std::format("{} [{}]", std::meta::identifier_of(^^T), "Type not serializable.");
     }
 }
 
