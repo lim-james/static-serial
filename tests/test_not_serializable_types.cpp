@@ -5,6 +5,12 @@
 
 static_assert(!stse::is_serializable<int*>());
 
+// class PrivatePointer {
+//     int* i = nullptr;
+// };
+// 
+// static_assert(!stse::is_serializable<PrivatePointer>());
+
 struct NestedObjectWithPointer {
     struct {
         int* i = nullptr;
