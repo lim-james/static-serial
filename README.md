@@ -20,8 +20,20 @@ auto restored  = stse::deserialize<OrderBookLevel>(raw_bytes);
 
 assert(bid == restored);
 assert(raw_bytes.size() != sizeof(OrderBookLevel));
-assert(raw_bytes.size() == 20); // exclude padding
+assert(raw_bytes.size() == 20); // excludes padding
 ```
+
+### Supported Types
+> Intend to better define this in a future patch
+
+
+| Serializable | Non-Serializable |
+| --- | --- |
+| Scalar types | Pointers |
+| std::array with trivially copyable types | std::vector (any dynamically sized container |
+| Aggregated structs | |
+| Nested structs | |
+
 
 ## Motivation
 
