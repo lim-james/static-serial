@@ -9,6 +9,7 @@
 #include <tuple>
 #include <type_traits>
 #include <cassert>
+#include <algorithm>
 
 #include <meta>
 
@@ -51,6 +52,26 @@ concept SerializableAggregate = std::is_trivially_copyable_v<T> &&
 
 template<typename T>
 concept NotSerializable = std::is_pointer_v<T> || std::is_null_pointer_v<T>;
+
+template<typename T>
+consteval bool is_serializable() {
+    if constexpr (SerializableScalar<T>) {
+        return !NotSerializable<T>;
+    } else if constexpr (SerializableAggregate<T>) {
+        static constexpr auto data_members = std::define_static_array(
+            std::meta::nonstatic_data_members_of(^^T, std::meta::access_context::current())
+        );
+        template for (constexpr auto member: data_members) {
+            if (!is_serializable<typename[:std::meta::type_of(member):]>()) {
+                return false;
+            }
+        }
+        return true;
+    } else if constexpr (SerializableStdArray<T>) {
+        return is_serializable<typename T::value_type>();
+    }
+    return false;
+}
 
 template<SerializableScalar T>    consteval std::size_t size_of();
 template<SerializableStdArray T>  consteval std::size_t size_of();
@@ -222,9 +243,13 @@ template<typename T, EndianType Endian = NativeEndian>
     const T& data, 
     Endian endianness = {}
 ) -> std::array<std::byte, raw_size<T>> {
-    auto buffer = std::array<std::byte, raw_size<T>>{};
-    serialize(buffer, data, endianness);
-    return buffer;
+    if constexpr (is_serializable<T>()) {
+        auto buffer = std::array<std::byte, raw_size<T>>{};
+        serialize(buffer, data, endianness);
+        return buffer;
+    } else {
+        static_assert(is_serializable<T>(), "Type not serializable.");
+    }
 }
 
 template<typename T, EndianType Endian = NativeEndian>
@@ -232,11 +257,15 @@ template<typename T, EndianType Endian = NativeEndian>
     std::span<const std::byte> data, 
     Endian endianness = {}
 ) {
-    assert(data.size() >= raw_size<T>);
+    if constexpr (is_serializable<T>()) {
+        assert(data.size() >= raw_size<T>);
 
-    T parsed;
-    deserialize(parsed, data, endianness);
-    return parsed;
+        T parsed;
+        deserialize(parsed, data, endianness);
+        return parsed;
+    } else {
+        static_assert(is_serializable<T>(), "Type not deserializable.");
+    }
 }
 
 }
