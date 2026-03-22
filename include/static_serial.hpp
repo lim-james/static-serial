@@ -53,26 +53,6 @@ concept SerializableAggregate = std::is_trivially_copyable_v<T> &&
 template<typename T>
 concept NotSerializable = std::is_pointer_v<T> || std::is_null_pointer_v<T>;
 
-template<typename T>
-consteval bool is_serializable() {
-    if constexpr (SerializableScalar<T>) {
-        return !NotSerializable<T>;
-    } else if constexpr (SerializableAggregate<T>) {
-        static constexpr auto data_members = std::define_static_array(
-            std::meta::nonstatic_data_members_of(^^T, std::meta::access_context::current())
-        );
-        template for (constexpr auto member: data_members) {
-            if (!is_serializable<typename[:std::meta::type_of(member):]>()) {
-                return false;
-            }
-        }
-        return true;
-    } else if constexpr (SerializableStdArray<T>) {
-        return is_serializable<typename T::value_type>();
-    }
-    return false;
-}
-
 template<SerializableScalar T>    consteval std::size_t size_of();
 template<SerializableStdArray T>  consteval std::size_t size_of();
 template<SerializableAggregate T> consteval std::size_t size_of();
@@ -237,6 +217,26 @@ constexpr std::span<const std::byte> deserialize(
 inline constexpr BigEndian    big_endian{};
 inline constexpr LittleEndian little_endian{};
 inline constexpr NativeEndian native_endian{};
+
+template<typename T>
+[[nodiscard]] consteval bool is_serializable() {
+    if constexpr (SerializableScalar<T>) {
+        return !NotSerializable<T>;
+    } else if constexpr (SerializableAggregate<T>) {
+        static constexpr auto data_members = std::define_static_array(
+            std::meta::nonstatic_data_members_of(^^T, std::meta::access_context::current())
+        );
+        template for (constexpr auto member: data_members) {
+            if (!is_serializable<typename[:std::meta::type_of(member):]>()) {
+                return false;
+            }
+        }
+        return true;
+    } else if constexpr (SerializableStdArray<T>) {
+        return is_serializable<typename T::value_type>();
+    }
+    return false;
+}
 
 template<typename T, EndianType Endian = NativeEndian> 
 [[nodiscard]] constexpr auto serialize(
