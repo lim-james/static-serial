@@ -88,14 +88,17 @@ std::string generate_schema() = delete("Type not supported for static serializat
 template<SerializableScalar T>
 consteval std::size_t size_of() { return std::meta::size_of(^^T); }
 
+template<typename T>
+consteval auto data_members_of() {
+    return std::define_static_array(
+        std::meta::nonstatic_data_members_of(^^T, std::meta::access_context::unchecked())
+    );
+}
+
 template<SerializableAggregate T>
 consteval std::size_t size_of() { 
-    static constexpr auto data_members = std::define_static_array(
-        std::meta::nonstatic_data_members_of(^^T, std::meta::access_context::current())
-    );
-
     std::size_t total = 0;
-    template for (constexpr auto member : data_members) {
+    template for (constexpr auto member : data_members_of<T>()) {
         total += size_of<typename[:std::meta::type_of(member):]>();
     }
     return total;
@@ -143,11 +146,7 @@ constexpr std::span<std::byte> serialize(
     const T& source,
     Endian endianness
 ) {
-    static constexpr auto data_members = std::define_static_array(
-        std::meta::nonstatic_data_members_of(^^T, std::meta::access_context::current())
-    );
-
-    template for (constexpr auto member : data_members) {
+    template for (constexpr auto member : data_members_of<T>()) {
         destination = serialize(destination, source.[:member:], endianness);
     }
 
@@ -200,11 +199,7 @@ constexpr std::span<const std::byte> deserialize(
     std::span<const std::byte> source,
     Endian endianness
 ) {
-    static constexpr auto data_members = std::define_static_array(
-        std::meta::nonstatic_data_members_of(^^T, std::meta::access_context::current())
-    );
-
-    template for (constexpr auto member: data_members) {
+    template for (constexpr auto member: data_members_of<T>()) {
         source = deserialize(destination.[:member:], source, endianness);
     }
 
@@ -258,9 +253,7 @@ std::string generate_schema() {
 
 template<SerializableAggregate T, std::uint8_t depth>
 std::string generate_schema() {
-    static constexpr auto data_members = std::define_static_array(
-        std::meta::nonstatic_data_members_of(^^T, std::meta::access_context::current())
-    );
+    static constexpr auto data_members = data_members_of<T>();
 
     constexpr auto fields = data_members.size();
     std::string schema_out = std::format("{} [{} fields]", type_header<T>(), fields);
@@ -290,10 +283,7 @@ template<typename T>
     if constexpr (SerializableScalar<T>) {
         return !NotSerializable<T>;
     } else if constexpr (SerializableAggregate<T>) {
-        static constexpr auto data_members = std::define_static_array(
-            std::meta::nonstatic_data_members_of(^^T, std::meta::access_context::current())
-        );
-        template for (constexpr auto member: data_members) {
+        template for (constexpr auto member: data_members_of<T>()) {
             if (!is_serializable<typename[:std::meta::type_of(member):]>()) {
                 return false;
             }

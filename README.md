@@ -91,8 +91,9 @@ to learn.
 4. Static assert messages are a little vague
     - Waiting for constexpr std::format [P3391](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2024/p3391r0.html)
 5. `nonstatic_data_members_of` does not pick up private members
+    - use unchecked access context
 
 ## Known issues
 
-1. std::tuple support
-2. private data members are not picked up
+1. std::tuple ~and std::pair~ support
+2. ~private data members are not picked up~
