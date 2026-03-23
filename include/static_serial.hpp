@@ -77,17 +77,11 @@ template<NotSerializable T, EndianType Endian>
 constexpr std::span<const std::byte> deserialize(T&, std::span<const std::byte>, Endian)
     = delete("Type not supported for static serialization");
 
-template<SerializableScalar T, std::uint8_t depth>
-std::string generate_schema();
-template<SerializableStdArray T, std::uint8_t depth>
-std::string generate_schema();
-template<SerializableAggregate T, std::uint8_t depth>
-std::string generate_schema();
+template<SerializableScalar T,    std::uint8_t depth> std::string generate_schema();
+template<SerializableStdArray T,  std::uint8_t depth> std::string generate_schema();
+template<SerializableAggregate T, std::uint8_t depth> std::string generate_schema();
 template<NotSerializable T, std::uint8_t depth>
 std::string generate_schema() = delete("Type not supported for static serialization");
-
-template<SerializableScalar T>
-consteval std::size_t size_of() { return std::meta::size_of(^^T); }
 
 template<typename T>
 consteval auto data_members_of() {
@@ -96,6 +90,12 @@ consteval auto data_members_of() {
     );
 }
 
+template<SerializableScalar T>
+consteval std::size_t size_of() { return std::meta::size_of(^^T); }
+
+template<SerializableStdArray T>
+consteval std::size_t size_of() { return std::tuple_size_v<T> * size_of<typename T::value_type>(); }
+
 template<SerializableAggregate T>
 consteval std::size_t size_of() { 
     std::size_t total = 0;
@@ -103,11 +103,6 @@ consteval std::size_t size_of() {
         total += size_of<typename[:std::meta::type_of(member):]>();
     }
     return total;
-}
-
-template<SerializableStdArray T>
-consteval std::size_t size_of() { 
-    return std::tuple_size_v<T> * size_of<typename T::value_type>();
 }
 
 template<typename T>
