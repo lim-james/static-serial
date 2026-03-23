@@ -11,6 +11,7 @@
 #include <cassert>
 #include <string>
 #include <format>
+#include <ranges>
 
 #include <meta>
 
@@ -26,6 +27,8 @@ template<typename T>
 concept EndianType = requires {
     { T::endian } -> std::convertible_to<std::endian>;
 };
+
+struct skipserialization {};
 
 template<size_t T> struct uint_of_size;
 template<> struct uint_of_size<1> { using type = std::uint8_t; };
@@ -83,10 +86,23 @@ template<SerializableAggregate T, std::uint8_t depth> std::string generate_schem
 template<NotSerializable T, std::uint8_t depth>
 std::string generate_schema() = delete("Type not supported for static serialization");
 
+
+template<typename Annotation>
+consteval bool has_annotation(std::meta::info info) {
+    for (auto annotation_info: std::meta::annotations_of(info)) {
+        if (std::meta::remove_cv(std::meta::type_of(annotation_info)) == ^^Annotation) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 template<typename T>
 consteval auto data_members_of() {
     return std::define_static_array(
         std::meta::nonstatic_data_members_of(^^T, std::meta::access_context::unchecked())
+        | std::views::filter([](auto info) { return !has_annotation<skipserialization>(info); })
     );
 }
 
@@ -269,6 +285,8 @@ std::string generate_schema() {
 inline constexpr BigEndian    big_endian{};
 inline constexpr LittleEndian little_endian{};
 inline constexpr NativeEndian native_endian{};
+
+inline constexpr auto skip = skipserialization{};
 
 template<typename T>
 [[nodiscard]] consteval bool is_serializable() {

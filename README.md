@@ -75,6 +75,7 @@ But I was primarily inspired by [Barry Revzin's Practical Reflection at CppCon25
    time (consteval). Needed this for `template for` 
 6. `std::meta::size_of` why this over `sizeof`? Simply because sizeof
    accomodates for padded bytes whilst meta::size_of is raw number of bytes
+7. `std::meta::annotations_of` for option to omit a field from serialization
 
 ## Difficulties faced
 
