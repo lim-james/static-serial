@@ -26,6 +26,9 @@ assert(raw_bytes.size() == 20); // excludes padding
 ### Supported Types
 > Intend to better define this in a future patch
 
+A rule-of-thumb is serializable objects should have standard layout and no heap
+owning members/pointers.
+
 
 | Serializable | Non-Serializable |
 | --- | --- |
