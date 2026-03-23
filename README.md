@@ -23,6 +23,55 @@ assert(raw_bytes.size() != sizeof(OrderBookLevel));
 assert(raw_bytes.size() == 20); // excludes padding
 ```
 
+## Public Interface
+
+**Endian Specifiers**
+```cpp
+inline constexpr BigEndian    big_endian{};
+inline constexpr LittleEndian little_endian{};
+inline constexpr NativeEndian native_endian{};
+```
+
+**Skip Member Annotation**
+```cpp
+inline constexpr auto skip = skipserialization{};
+// e.g. [[=skip]] int* ignore_member;
+```
+
+**Check Serializability**
+```cpp
+template<typename T>
+[[nodiscard]] consteval bool is_serializable();
+```
+
+**Serialization Methods**
+```cpp
+template<typename T, EndianType Endian = NativeEndian> 
+[[nodiscard]] constexpr auto serialize(
+    const T& data, 
+    Endian endianness = {}
+) -> std::array<std::byte, raw_size<T>>;
+
+template<typename T, EndianType Endian = NativeEndian> 
+constexpr std::span<std::byte> serialize_into(
+    const T& data, 
+    std::span<std::byte> destination,
+    Endian endianness = {}
+);
+
+template<typename T, EndianType Endian = NativeEndian>
+[[nodiscard]] constexpr T deserialize(
+    std::span<const std::byte> data, 
+    Endian endianness = {}
+);
+```
+
+**Return Schema**
+```cpp
+template<typename T>
+[[nodiscard]] std::string schema();
+```
+
 ### Supported Types
 > Intend to better define this in a future patch
 
