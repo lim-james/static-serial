@@ -46,7 +46,8 @@ concept SerializableStdArray = requires {
 } && std::is_trivially_copyable_v<typename T::value_type>;
 
 template<typename T>
-concept SerializableAggregate = !SerializableScalar<T> &&
+concept SerializableAggregate = std::is_standard_layout_v<T> &&
+                                !SerializableScalar<T> &&
                                 !SerializableStdArray<T>;
 
 template<typename T>
@@ -326,7 +327,7 @@ template<typename T, EndianType Endian = NativeEndian>
 }
 
 template<typename T>
-std::string schema() {
+[[nodiscard]] std::string schema() {
     if constexpr (is_serializable<T>()) {
         return generate_schema<T, 0>();
     } else {
