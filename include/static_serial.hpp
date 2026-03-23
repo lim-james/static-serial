@@ -301,6 +301,19 @@ template<typename T, EndianType Endian = NativeEndian>
     }
 }
 
+template<typename T, EndianType Endian = NativeEndian> 
+constexpr std::span<std::byte> serialize_into(
+    const T& data, 
+    std::span<std::byte> destination,
+    Endian endianness = {}
+) {
+    if constexpr (is_serializable<T>()) {
+        return serialize(destination, data, endianness);
+    } else {
+        static_assert(is_serializable<T>(), "Type not serializable.");
+    }
+}
+
 template<typename T, EndianType Endian = NativeEndian>
 [[nodiscard]] constexpr T deserialize(
     std::span<const std::byte> data, 

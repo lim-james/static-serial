@@ -56,7 +56,9 @@ int main() {
         }},
     };
 
-    auto raw_bytes = stse::serialize(snapshot);
+    auto raw_bytes = std::array<std::byte, 1024>{};
+    auto moved_ptr = stse::serialize_into(snapshot, raw_bytes);
+    
     auto restored_snapshot = stse::deserialize<MarketSnapshot>(raw_bytes);
     assert(snapshot == restored_snapshot);
 
