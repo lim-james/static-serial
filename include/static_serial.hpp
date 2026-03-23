@@ -134,9 +134,7 @@ constexpr std::span<std::byte> serialize(
         }
     }();
 
-    for (std::size_t i{}; i < value_byte_count; ++i) {
-        destination[i] = bytes[i];
-    }
+    std::ranges::copy(bytes, destination.begin());
 
     return destination.subspan(value_byte_count);
 }
@@ -175,9 +173,7 @@ constexpr std::span<const std::byte> deserialize(
     value_buffer_t buffer;
 
     auto bytes = source.first(value_byte_count);
-    for (std::size_t i{}; i < value_byte_count; ++i) {
-        buffer[i] = bytes[i];
-    }
+    std::ranges::copy(bytes, buffer.begin());
 
     destination = [&buffer]() {
         if constexpr (Endian::endian == NativeEndian::endian) {
