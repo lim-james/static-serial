@@ -13,6 +13,7 @@
 #include <format>
 #include <ranges>
 #include <functional>
+#include <algorithm>
 
 #include <meta>
 
@@ -90,20 +91,24 @@ std::string generate_schema() = delete("Type not supported for static serializat
 
 template<typename Annotation>
 consteval bool has_annotation(std::meta::info info) {
-    for (auto annotation_info: std::meta::annotations_of(info)) {
-        if (std::meta::remove_cv(std::meta::type_of(annotation_info)) == ^^Annotation) {
-            return true;
-        }
-    }
+    auto annotations = std::meta::annotations_of(info) 
+                     | std::views::transform(std::meta::type_of)
+                     | std::views::transform(std::meta::remove_cv);
 
-    return false;
+    auto match_annotation = [](auto a) { return a == ^^Annotation; };
+
+    return std::ranges::any_of(annotations, match_annotation);
 }
 
 template<typename T>
 consteval auto data_members_of() {
+    static constexpr auto skip_serialization = std::views::filter([](auto info) { 
+        return !has_annotation<skipserialization>(info); 
+    });
+
     return std::define_static_array(
         std::meta::nonstatic_data_members_of(^^T, std::meta::access_context::unchecked())
-        | std::views::filter([](auto info) { return !has_annotation<skipserialization>(info); })
+        | skip_serialization
     );
 }
 
