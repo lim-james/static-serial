@@ -25,5 +25,4 @@ consteval bool test_back_and_forth_endianness(Endian binary_endianness) {
     auto restored  = stse::deserialize<T>(raw_bytes, binary_endianness);
     return data == restored;
 }
-
 }

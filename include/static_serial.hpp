@@ -12,6 +12,7 @@
 #include <string>
 #include <format>
 #include <ranges>
+#include <functional>
 
 #include <meta>
 
@@ -133,7 +134,7 @@ constexpr std::span<std::byte> serialize(
     static constexpr std::size_t value_byte_count = raw_size<T>;
     using value_buffer_t = std::array<std::byte, value_byte_count>;
 
-    auto bytes = [&source]() {
+    auto bytes = std::invoke([&source]() {
         if constexpr (Endian::endian == NativeEndian::endian) {
             return std::bit_cast<value_buffer_t>(source);
         } else if constexpr (std::is_integral_v<T>) {
@@ -143,7 +144,7 @@ constexpr std::span<std::byte> serialize(
             auto byte_buffer = std::bit_cast<U>(source);
             return std::bit_cast<value_buffer_t>(std::byteswap(byte_buffer));
         }
-    }();
+    });
 
     std::ranges::copy(bytes, destination.begin());
 
