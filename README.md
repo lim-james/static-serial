@@ -16,7 +16,7 @@ auto bid = OrderBookLevel{
 };
 
 auto raw_bytes = stse::serialize(bid);
-auto restored  = stse::deserialize<OrderBookLevel>(raw_bytes);
+auto restored  = stse::deserialize<OrderBookLevel>(raw_bytes).first;
 
 assert(bid == restored);
 assert(raw_bytes.size() != sizeof(OrderBookLevel));
@@ -48,10 +48,10 @@ constexpr std::span<std::byte> serialize_into(
 );
 
 template<typename T, EndianType Endian = NativeEndian>
-[[nodiscard]] constexpr T deserialize(
+[[nodiscard]] constexpr auto deserialize(
     std::span<const std::byte> data, 
     Endian endianness = {}
-);
+) -> std::pair<T, std::span<const std::byte>>;
 ```
 
 **Skip Member Annotation**
