@@ -23,26 +23,14 @@ assert(raw_bytes.size() != sizeof(OrderBookLevel));
 assert(raw_bytes.size() == 20); // excludes padding
 ```
 
+## Getting Started
+
+> Incomplete segment: to include supported compilers
+
+1. Add `include/static_serial.hpp` into your project. (No support for modules yet)
+2. Done.
+
 ## Public Interface
-
-**Endian Specifiers**
-```cpp
-inline constexpr BigEndian    big_endian{};
-inline constexpr LittleEndian little_endian{};
-inline constexpr NativeEndian native_endian{};
-```
-
-**Skip Member Annotation**
-```cpp
-inline constexpr auto skip = skipserialization{};
-// e.g. [[=skip]] int* ignore_member;
-```
-
-**Check Serializability**
-```cpp
-template<typename T>
-[[nodiscard]] consteval bool is_serializable();
-```
 
 **Serialization Methods**
 ```cpp
@@ -64,6 +52,25 @@ template<typename T, EndianType Endian = NativeEndian>
     std::span<const std::byte> data, 
     Endian endianness = {}
 );
+```
+
+**Skip Member Annotation**
+```cpp
+inline constexpr auto skip = skipserialization{};
+// e.g. [[=skip]] int* ignore_member;
+```
+
+**Check Serializability**
+```cpp
+template<typename T>
+[[nodiscard]] consteval bool is_serializable();
+```
+
+**Endian Specifiers**
+```cpp
+inline constexpr BigEndian    big_endian{};
+inline constexpr LittleEndian little_endian{};
+inline constexpr NativeEndian native_endian{};
 ```
 
 **Return Schema**
