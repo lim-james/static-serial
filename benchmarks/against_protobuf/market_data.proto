@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+message Price {
+    int64 mantissa = 1;
+    int32 exponent = 2;
+}
+
+message OrderBookLevel {
+    Price price = 1;
+    uint64 quantity = 2;
+    uint32 order_count = 3;
+}
+
+message MarketSnapshot {
+    uint64 timestamp_ns = 1;
+    string symbol = 2;
+    repeated OrderBookLevel bids = 3;
+    repeated OrderBookLevel asks = 4;
+}
