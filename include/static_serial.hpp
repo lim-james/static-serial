@@ -2,6 +2,7 @@
 
 #include <concepts>
 #include <cstddef>
+#include <cstring>
 #include <cstdint>
 #include <array>
 #include <bit>
@@ -151,7 +152,13 @@ constexpr std::span<std::byte> serialize(
         }
     });
 
-    std::ranges::copy(bytes, destination.begin());
+    if consteval {
+        for (std::size_t i = 0; i < value_byte_count; ++i) {
+            destination[i] = bytes[i];
+        }
+    } else {
+        std::memcpy(destination.data(), bytes.data(), value_byte_count);
+    }
 
     return destination.subspan(value_byte_count);
 }
@@ -190,7 +197,13 @@ constexpr std::span<const std::byte> deserialize(
     value_buffer_t buffer;
 
     auto bytes = source.first(value_byte_count);
-    std::ranges::copy(bytes, buffer.begin());
+    if consteval {
+        for (std::size_t i = 0; i < value_byte_count; ++i) {
+            buffer[i] = bytes[i];
+        }
+    } else {
+        std::memcpy(buffer.data(), bytes.data(), value_byte_count);
+    }
 
     destination = [&buffer]() {
         if constexpr (Endian::endian == NativeEndian::endian) {
