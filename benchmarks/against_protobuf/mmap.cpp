@@ -1,5 +1,6 @@
 #include "static_serial.hpp"
 
+#include <chrono>
 #include <iterator>
 #include <optional>
 #include <span>
@@ -13,45 +14,9 @@
 #include <random>
 #include <algorithm>
 #include <string_view>
+#include <print>
 
 #include "market_data.h"
-
-MarketSnapshot generate_random_snapshot(const char* symbol_str) {
-    // Use thread_local to avoid re-seeding and for thread safety in concurrent environments
-    static thread_local std::mt19937_64 engine(std::random_device{}());
-    
-    // Define distributions for various fields
-    std::uniform_int_distribution<std::uint64_t> ts_dist(1711540000000000000ULL, 1711550000000000000ULL);
-    std::uniform_int_distribution<std::int64_t> price_dist(10000, 50000); // e.g., $100.00 to $500.00
-    std::uniform_int_distribution<std::uint64_t> qty_dist(1, 1000);
-    std::uniform_int_distribution<std::uint32_t> count_dist(1, 20);
-
-    MarketSnapshot snapshot;
-    snapshot.timestamp_ns = ts_dist(engine);
-    snapshot.symbol = make_ticker(symbol_str);
-
-    // Starting midpoint for a realistic spread
-    std::int64_t mid_price = price_dist(engine);
-    std::int8_t common_exponent = -2; // Standard 2 decimal places
-
-    for (std::size_t i = 0; i < 5; ++i) {
-        // Bids: Prices go down as we move deeper into the book
-        snapshot.bids[i] = {
-            .price = {mid_price - static_cast<std::int64_t>(i + 1), common_exponent},
-            .quantity = qty_dist(engine),
-            .order_count = count_dist(engine)
-        };
-
-        // Asks: Prices go up as we move deeper into the book
-        snapshot.asks[i] = {
-            .price = {mid_price + static_cast<std::int64_t>(i + 1), common_exponent},
-            .quantity = qty_dist(engine),
-            .order_count = count_dist(engine)
-        };
-    }
-
-    return snapshot;
-}
 
 class file_guard {
 public:
@@ -85,7 +50,7 @@ private:
 };
 
 int main() {
-    using entry_t = MarketSnapshot;
+    using entry_t = native::MarketSnapshot;
 
     static constexpr std::size_t NUMBER_OF_ENTRIES = 1'000'000;
     static constexpr std::size_t ENTRY_SIZE = sizeof(entry_t);
@@ -94,7 +59,7 @@ int main() {
     std::vector<entry_t> entries;
     entries.reserve(NUMBER_OF_ENTRIES);
     std::generate_n(std::back_inserter(entries), NUMBER_OF_ENTRIES, []() {
-        return generate_random_snapshot("APPL");
+        return native::generate_random_snapshot("APPL");
     });
 
     {
@@ -102,7 +67,12 @@ int main() {
         auto addr = mmap_guard(file(), BUFFER_SIZE);
         auto buffer = std::span<std::byte>(static_cast<std::byte*>(addr()), BUFFER_SIZE);
 
+        const auto start_timer = std::chrono::steady_clock::now();
         for (const auto& entry: entries) buffer = stse::serialize_into(entry, buffer);
+        const auto end_timer = std::chrono::steady_clock::now();
+
+        const auto duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end_timer - start_timer);
+        std::println("Serialize: {}", duration_ms);
     }
 
     {
@@ -111,10 +81,15 @@ int main() {
         auto addr = mmap_guard(file(), BUFFER_SIZE);
         auto buffer = std::span<const std::byte>(static_cast<std::byte*>(addr()), BUFFER_SIZE);
 
+        const auto start_timer = std::chrono::steady_clock::now();
         for (const auto& entry: entries) {
             auto [restored, offset_buffer] = stse::deserialize<entry_t>(buffer);
             buffer = offset_buffer;
             assert(entry == restored);
         }
+        const auto end_timer = std::chrono::steady_clock::now();
+
+        const auto duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end_timer - start_timer);
+        std::println("Deserialize: {}", duration_ms);
     }
 }
