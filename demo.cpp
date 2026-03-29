@@ -59,7 +59,7 @@ int main() {
     auto raw_bytes = std::array<std::byte, 1024>{};
     [[maybe_unused]] auto moved_ptr = stse::serialize_into(snapshot, raw_bytes);
     
-    auto [restored_snapshot, _] = stse::deserialize<MarketSnapshot>(raw_bytes);
+    auto restored_snapshot = stse::deserialize<MarketSnapshot>(raw_bytes).object;
     assert(snapshot == restored_snapshot);
 
     std::string schema = stse::schema<MarketSnapshot>();

@@ -13,6 +13,6 @@ static constexpr PaddedStruct padded{'a', 0};
 static constexpr auto bytes = stse::serialize(padded);
 static_assert(bytes.size() != sizeof(PaddedStruct));
 static_assert(bytes.size() == 9);
-static_assert(stse::deserialize<PaddedStruct>(bytes).first == padded);
+static_assert(stse::deserialize<PaddedStruct>(bytes).object == padded);
 
 

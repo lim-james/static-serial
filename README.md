@@ -16,7 +16,7 @@ auto bid = OrderBookLevel{
 };
 
 auto raw_bytes = stse::serialize(bid);
-auto restored  = stse::deserialize<OrderBookLevel>(raw_bytes).first;
+auto restored  = stse::deserialize<OrderBookLevel>(raw_bytes).object;
 
 assert(bid == restored);
 assert(raw_bytes.size() != sizeof(OrderBookLevel));

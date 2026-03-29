@@ -354,17 +354,26 @@ constexpr std::span<std::byte> serialize_into(
     }
 }
 
+template<typename T>
+struct DeserializeResult {
+    T object;
+    std::span<const std::byte> offset;
+};
+
 template<typename T, EndianType Endian = NativeEndian>
 [[nodiscard]] constexpr auto deserialize(
     std::span<const std::byte> data, 
     Endian endianness = {}
-) -> std::pair<T, std::span<const std::byte>> {
+) -> DeserializeResult<T> {
     if constexpr (is_serializable<T>()) {
         assert(data.size() >= raw_size<T>);
 
         T parsed;
         auto offset_ptr = deserialize(parsed, data, endianness);
-        return std::pair{parsed, offset_ptr};
+        return DeserializeResult{
+            .object = parsed, 
+            .offset = offset_ptr
+        };
     } else {
         static_assert(is_serializable<T>(), "Type not deserializable.");
     }
