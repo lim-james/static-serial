@@ -37,15 +37,15 @@ private:
 
 class mmap_guard {
 public:
-    mmap_guard(int fd, std::size_t size) {
-        addr_ = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    mmap_guard(int fd, std::size_t size):  size_(size) {
+        addr_ = mmap(nullptr, size_, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     }
 
     ~mmap_guard() { if (addr_ != MAP_FAILED) munmap(addr_, size_); }
     void* operator()() const { return addr_; }
 
 private:
-    std::size_t size_ = 0;
+    const std::size_t size_;
     void* addr_ = MAP_FAILED;
 };
 
