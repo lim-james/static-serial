@@ -17,6 +17,7 @@
 #include <algorithm>
 
 #include <meta>
+#include <utility>
 
 namespace stse {
 
@@ -182,7 +183,9 @@ constexpr std::span<std::byte> serialize(
     const T& source,
     Endian endianness
 ) {
-    for (const auto& item: source) destination = serialize(destination, item, endianness);
+    std::invoke([&]<std::size_t... Is>(std::index_sequence<Is...>) {
+        ((destination = serialize(destination, source[Is], endianness)), ...);
+    }, std::make_index_sequence<std::tuple_size_v<T>>{});
     return destination;
 }
 
@@ -239,7 +242,9 @@ constexpr std::span<const std::byte> deserialize(
     std::span<const std::byte> source,
     Endian endianness
 ) {
-    for (auto& item: destination) source = deserialize(item, source, endianness);
+    std::invoke([&]<std::size_t... Is>(std::index_sequence<Is...>) {
+        ((source = deserialize(destination[Is], source, endianness)), ...);
+    }, std::make_index_sequence<std::tuple_size_v<T>>{});
     return source;
 }
 
