@@ -47,11 +47,10 @@ constexpr std::span<std::byte> serialize_into(
     Endian endianness = {}
 );
 
-template<typename T, EndianType Endian = NativeEndian>
 [[nodiscard]] constexpr auto deserialize(
     std::span<const std::byte> data, 
     Endian endianness = {}
-) -> std::pair<T, std::span<const std::byte>>;
+) -> DeserializeResult<T>;
 ```
 
 **Skip Member Annotation**
@@ -77,6 +76,15 @@ inline constexpr NativeEndian native_endian{};
 ```cpp
 template<typename T>
 [[nodiscard]] std::string schema();
+```
+
+**Deserialize Return Type**
+```cpp
+template<typename T>
+struct DeserializeResult {
+    T object;
+    std::span<const std::byte> offset;
+};
 ```
 
 ### Supported Types
