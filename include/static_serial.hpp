@@ -21,7 +21,7 @@
 
 namespace stse {
 
-namespace {
+namespace details {
 
 struct BigEndian    { static constexpr std::endian endian = std::endian::big; };
 struct LittleEndian { static constexpr std::endian endian = std::endian::little; };
@@ -140,18 +140,17 @@ constexpr std::span<std::byte> serialize(
 ) {
     static constexpr std::size_t value_byte_count = raw_size<T>;
     using value_buffer_t = std::array<std::byte, value_byte_count>;
+    value_buffer_t bytes;
 
-    auto bytes = std::invoke([&source]() {
-        if constexpr (Endian::endian == NativeEndian::endian) {
-            return std::bit_cast<value_buffer_t>(source);
-        } else if constexpr (std::is_integral_v<T>) {
-            return std::bit_cast<value_buffer_t>(std::byteswap(source));
-        } else {
-            using U = uint_of_size_t<T>;
-            auto byte_buffer = std::bit_cast<U>(source);
-            return std::bit_cast<value_buffer_t>(std::byteswap(byte_buffer));
-        }
-    });
+    if constexpr (Endian::endian == NativeEndian::endian) {
+        bytes = std::bit_cast<value_buffer_t>(source);
+    } else if constexpr (std::is_integral_v<T>) {
+        bytes = std::bit_cast<value_buffer_t>(std::byteswap(source));
+    } else {
+        using U = uint_of_size_t<T>;
+        auto byte_buffer = std::bit_cast<U>(source);
+        bytes = std::bit_cast<value_buffer_t>(std::byteswap(byte_buffer));
+    }
 
     if consteval {
         for (std::size_t i = 0; i < value_byte_count; ++i) {
@@ -309,51 +308,51 @@ std::string generate_schema() {
 
 }
 
-inline constexpr BigEndian    big_endian{};
-inline constexpr LittleEndian little_endian{};
-inline constexpr NativeEndian native_endian{};
+inline constexpr details::BigEndian    big_endian{};
+inline constexpr details::LittleEndian little_endian{};
+inline constexpr details::NativeEndian native_endian{};
 
-inline constexpr auto skip = skipserialization{};
+inline constexpr auto skip = details::skipserialization{};
 
 template<typename T>
 [[nodiscard]] consteval bool is_serializable() {
-    if constexpr (SerializableScalar<T>) {
-        return !NotSerializable<T>;
-    } else if constexpr (SerializableAggregate<T>) {
-        template for (constexpr auto member: data_members_of<T>()) {
+    if constexpr (details::SerializableScalar<T>) {
+        return !details::NotSerializable<T>;
+    } else if constexpr (details::SerializableAggregate<T>) {
+        template for (constexpr auto member: details::data_members_of<T>()) {
             if (!is_serializable<typename[:std::meta::type_of(member):]>()) {
                 return false;
             }
         }
         return true;
-    } else if constexpr (SerializableStdArray<T>) {
+    } else if constexpr (details::SerializableStdArray<T>) {
         return is_serializable<typename T::value_type>();
     }
     return false;
 }
 
-template<typename T, EndianType Endian = NativeEndian> 
+template<typename T, details::EndianType Endian = details::NativeEndian> 
 [[nodiscard]] constexpr auto serialize(
     const T& data, 
     Endian endianness = {}
-) -> std::array<std::byte, raw_size<T>> {
+) -> std::array<std::byte, details::raw_size<T>> {
     if constexpr (is_serializable<T>()) {
-        auto buffer = std::array<std::byte, raw_size<T>>{};
-        serialize(buffer, data, endianness);
+        auto buffer = std::array<std::byte, details::raw_size<T>>{};
+        details::serialize(buffer, data, endianness);
         return buffer;
     } else {
         static_assert(is_serializable<T>(), "Type not serializable.");
     }
 }
 
-template<typename T, EndianType Endian = NativeEndian> 
+template<typename T, details::EndianType Endian = details::NativeEndian> 
 constexpr std::span<std::byte> serialize_into(
     const T& data, 
     std::span<std::byte> destination,
     Endian endianness = {}
 ) {
     if constexpr (is_serializable<T>()) {
-        return serialize(destination, data, endianness);
+        return details::serialize(destination, data, endianness);
     } else {
         static_assert(is_serializable<T>(), "Type not serializable.");
     }
@@ -365,16 +364,16 @@ struct DeserializeResult {
     std::span<const std::byte> offset;
 };
 
-template<typename T, EndianType Endian = NativeEndian>
+template<typename T, details::EndianType Endian = details::NativeEndian>
 [[nodiscard]] constexpr auto deserialize(
     std::span<const std::byte> data, 
     Endian endianness = {}
 ) -> DeserializeResult<T> {
     if constexpr (is_serializable<T>()) {
-        assert(data.size() >= raw_size<T>);
+        assert(data.size() >= details::raw_size<T>);
 
         T parsed;
-        auto offset_ptr = deserialize(parsed, data, endianness);
+        auto offset_ptr = details::deserialize(parsed, data, endianness);
         return DeserializeResult{
             .object = parsed, 
             .offset = offset_ptr
@@ -387,7 +386,7 @@ template<typename T, EndianType Endian = NativeEndian>
 template<typename T>
 [[nodiscard]] std::string schema() {
     if constexpr (is_serializable<T>()) {
-        return generate_schema<T, 0>();
+        return details::generate_schema<T, 0>();
     } else {
         return std::format("{} [{}]", std::meta::identifier_of(^^T), "Type not serializable.");
     }
