@@ -1,6 +1,6 @@
 # STSE vs G Protobuf
 
-Comiled both on `-O2`
+Compiled both on `-O2`
 
 Here are the numbers on a data set with 1M entries.
 
