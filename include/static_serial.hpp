@@ -13,7 +13,6 @@
 #include <string>
 #include <format>
 #include <ranges>
-#include <functional>
 #include <algorithm>
 
 #include <meta>
@@ -60,6 +59,12 @@ concept SerializableAggregate = std::is_standard_layout_v<T> &&
 template<typename T>
 concept NotSerializable = std::is_pointer_v<T> || std::is_null_pointer_v<T>;
 
+template<typename T>
+concept Serializable = (SerializableScalar<T> 
+                    || SerializableStdArray<T> 
+                    || SerializableAggregate<T>)
+                    && !NotSerializable<T>;
+
 template<typename T> consteval std::size_t size_of();
 
 template<SerializableScalar T, EndianType Endian>
@@ -69,7 +74,7 @@ constexpr std::span<std::byte> serialize_array(std::span<std::byte>, const T&, E
 template<SerializableAggregate T, EndianType Endian>
 constexpr std::span<std::byte> serialize_aggregate(std::span<std::byte>, const T&, Endian);
 
-template<typename T, EndianType Endian>
+template<Serializable T, EndianType Endian>
 constexpr std::span<std::byte> serialize(std::span<std::byte>, const T&, Endian);
 template<NotSerializable T, EndianType Endian>
 constexpr std::span<std::byte> serialize(std::span<std::byte>, const T&, Endian) 
@@ -82,7 +87,7 @@ constexpr std::span<const std::byte> deserialize_array(T&, std::span<const std::
 template<SerializableAggregate T, EndianType Endian>
 constexpr std::span<const std::byte> deserialize_aggregate(T&, std::span<const std::byte>, Endian);
 
-template<typename T, EndianType Endian>
+template<Serializable T, EndianType Endian>
 constexpr std::span<const std::byte> deserialize(T&, std::span<const std::byte>, Endian);
 template<NotSerializable T, EndianType Endian>
 constexpr std::span<const std::byte> deserialize(T&, std::span<const std::byte>, Endian)
@@ -198,7 +203,7 @@ constexpr std::span<std::byte> serialize_aggregate(
     return destination;
 }
 
-template<typename T, EndianType Endian> 
+template<Serializable T, EndianType Endian> 
 constexpr std::span<std::byte> serialize(
     std::span<std::byte> destination, 
     const T& source,
@@ -274,7 +279,7 @@ constexpr std::span<const std::byte> deserialize_aggregate(
     return source;
 }
 
-template<typename T, EndianType Endian> 
+template<Serializable T, EndianType Endian> 
 constexpr std::span<const std::byte> deserialize(
     T& destination, 
     std::span<const std::byte> source,
