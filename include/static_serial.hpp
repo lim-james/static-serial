@@ -53,6 +53,7 @@ concept SerializableStdArray = requires {
 
 template<typename T>
 concept SerializableAggregate = std::is_standard_layout_v<T> &&
+                                std::is_trivially_destructible_v<T> &&
                                 !SerializableScalar<T> &&
                                 !SerializableStdArray<T>;
 
@@ -365,18 +366,22 @@ inline constexpr auto skip = details::skipserialization{};
 
 template<typename T>
 [[nodiscard]] consteval bool is_serializable() {
-    if constexpr (details::SerializableScalar<T>) {
-        return !details::NotSerializable<T>;
-    } else if constexpr (details::SerializableAggregate<T>) {
-        template for (constexpr auto member: details::data_members_of<T>) {
+    using T_NORM = std::decay_t<T>;
+    
+    if constexpr (details::NotSerializable<T_NORM>) {
+        return false;
+    } else if constexpr (details::SerializableScalar<T_NORM>) {
+        return !details::NotSerializable<T_NORM>;
+    } else if constexpr (details::SerializableStdArray<T_NORM>) {
+        return is_serializable<typename T_NORM::value_type>();
+    } else if constexpr (details::SerializableAggregate<T_NORM>) {
+        template for (constexpr auto member: details::data_members_of<T_NORM>) {
             if (!is_serializable<typename[:std::meta::type_of(member):]>()) {
                 return false;
             }
         }
         return true;
-    } else if constexpr (details::SerializableStdArray<T>) {
-        return is_serializable<typename T::value_type>();
-    }
+    } 
     return false;
 }
 

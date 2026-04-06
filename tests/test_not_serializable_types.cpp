@@ -5,11 +5,11 @@
 
 static_assert(!stse::is_serializable<int*>());
 
-// class PrivatePointer {
-//     int* i = nullptr;
-// };
-// 
-// static_assert(!stse::is_serializable<PrivatePointer>());
+class PrivatePointer {
+    int* i = nullptr;
+};
+
+static_assert(!stse::is_serializable<PrivatePointer>());
 
 struct NestedObjectWithPointer {
     struct {
@@ -27,8 +27,9 @@ struct NestedArrayObjectWithPointer {
 
 static_assert(!stse::is_serializable<NestedArrayObjectWithPointer>());
 
-// static_assert(!stse::is_serializable<std::string>());
-// static_assert(!stse::is_serializable<std::vector<int>>());
+static_assert(!stse::is_serializable<char[16]>());
+static_assert(!stse::is_serializable<std::string>());
+static_assert(!stse::is_serializable<std::vector<int>>());
 
 static_assert(stse::is_serializable<std::array<int, 5>>());
 static_assert(stse::is_serializable<std::pair<int, int>>());

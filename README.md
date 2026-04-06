@@ -163,7 +163,14 @@ to learn.
 6. Long build times
     - use `-ftime-report` to breakdown build times. Reduce number of function
 overloads to cut build times by using `if constexpr`
-
+7. fetching data members of std::vector yields nothing
+```cpp
+constexpr auto members = std::meta::nonstatic_data_members_of(
+    ^^std::vector<int>, 
+    std::meta::access_context::unchecked()
+);
+static_assert(members.size() == 0); // will pass
+```
 
 ## Known issues
 
