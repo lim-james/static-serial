@@ -179,9 +179,9 @@ constexpr std::span<std::byte> serialize_array(
     const T& source,
     Endian endianness
 ) {
-    std::invoke([&]<std::size_t... Is>(std::index_sequence<Is...>) {
+    [&]<std::size_t... Is>(std::index_sequence<Is...>) {
         ((destination = serialize(destination, source[Is], endianness)), ...);
-    }, std::make_index_sequence<std::tuple_size_v<T>>{});
+    }(std::make_index_sequence<std::tuple_size_v<T>>{});
     return destination;
 }
 
@@ -255,9 +255,9 @@ constexpr std::span<const std::byte> deserialize_array(
     std::span<const std::byte> source,
     Endian endianness
 ) {
-    std::invoke([&]<std::size_t... Is>(std::index_sequence<Is...>) {
+    [&]<std::size_t... Is>(std::index_sequence<Is...>) {
         ((source = deserialize(destination[Is], source, endianness)), ...);
-    }, std::make_index_sequence<std::tuple_size_v<T>>{});
+    }(std::make_index_sequence<std::tuple_size_v<T>>{});
     return source;
 }
 
@@ -293,11 +293,11 @@ constexpr std::span<const std::byte> deserialize(
 
 template<std::uint8_t depth>
 constexpr std::string_view pad() {
-    static constexpr auto padding = std::invoke([] {
+    static constexpr auto padding = [] {
         std::array<char, depth * 2> padding{};
         padding.fill(' ');
         return padding;
-    });
+    }();
     return {padding.data(), padding.size()};
 }
 
