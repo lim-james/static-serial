@@ -160,6 +160,10 @@ to learn.
     - Waiting for constexpr std::format [P3391](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2024/p3391r0.html)
 5. `nonstatic_data_members_of` does not pick up private members
     - use unchecked access context
+6. Long build times
+    - use `-ftime-report` to breakdown build times. Reduce number of function
+overloads to cut build times by using `if constexpr`
+
 
 ## Known issues
 
