@@ -60,33 +60,39 @@ concept SerializableAggregate = std::is_standard_layout_v<T> &&
 template<typename T>
 concept NotSerializable = std::is_pointer_v<T> || std::is_null_pointer_v<T>;
 
-template<SerializableScalar T>    consteval std::size_t size_of();
-template<SerializableStdArray T>  consteval std::size_t size_of();
-template<SerializableAggregate T> consteval std::size_t size_of();
+template<typename T> consteval std::size_t size_of();
 
 template<SerializableScalar T, EndianType Endian>
-constexpr std::span<std::byte> serialize(std::span<std::byte>, const T&, Endian);
+constexpr std::span<std::byte> serialize_scalar(std::span<std::byte>, const T&, Endian);
 template<SerializableStdArray T, EndianType Endian>
-constexpr std::span<std::byte> serialize(std::span<std::byte>, const T&, Endian);
+constexpr std::span<std::byte> serialize_array(std::span<std::byte>, const T&, Endian);
 template<SerializableAggregate T, EndianType Endian>
+constexpr std::span<std::byte> serialize_aggregate(std::span<std::byte>, const T&, Endian);
+
+template<typename T, EndianType Endian>
 constexpr std::span<std::byte> serialize(std::span<std::byte>, const T&, Endian);
 template<NotSerializable T, EndianType Endian>
 constexpr std::span<std::byte> serialize(std::span<std::byte>, const T&, Endian) 
     = delete("Type not supported for static serialization");
 
 template<SerializableScalar T, EndianType Endian>
-constexpr std::span<const std::byte> deserialize(T&, std::span<const std::byte>, Endian);
+constexpr std::span<const std::byte> deserialize_scalar(T&, std::span<const std::byte>, Endian);
 template<SerializableStdArray T, EndianType Endian>
-constexpr std::span<const std::byte> deserialize(T&, std::span<const std::byte>, Endian);
+constexpr std::span<const std::byte> deserialize_array(T&, std::span<const std::byte>, Endian);
 template<SerializableAggregate T, EndianType Endian>
+constexpr std::span<const std::byte> deserialize_aggregate(T&, std::span<const std::byte>, Endian);
+
+template<typename T, EndianType Endian>
 constexpr std::span<const std::byte> deserialize(T&, std::span<const std::byte>, Endian);
 template<NotSerializable T, EndianType Endian>
 constexpr std::span<const std::byte> deserialize(T&, std::span<const std::byte>, Endian)
     = delete("Type not supported for static serialization");
 
+
 template<SerializableScalar T,    std::uint8_t depth> std::string generate_schema();
 template<SerializableStdArray T,  std::uint8_t depth> std::string generate_schema();
 template<SerializableAggregate T, std::uint8_t depth> std::string generate_schema();
+
 template<NotSerializable T, std::uint8_t depth>
 std::string generate_schema() = delete("Type not supported for static serialization");
 
@@ -117,26 +123,27 @@ consteval auto get_data_members_of() {
 template<typename T>
 inline constexpr auto data_members_of = get_data_members_of<T>();
 
-template<SerializableScalar T>
-consteval std::size_t size_of() { return std::meta::size_of(^^T); }
-
-template<SerializableStdArray T>
-consteval std::size_t size_of() { return std::tuple_size_v<T> * size_of<typename T::value_type>(); }
-
-template<SerializableAggregate T>
+template<typename T>
 consteval std::size_t size_of() { 
-    std::size_t total = 0;
-    template for (constexpr auto member : data_members_of<T>) {
-        total += size_of<typename[:std::meta::type_of(member):]>();
+    if constexpr (SerializableScalar<T>) {
+        return std::meta::size_of(^^T); 
+    } else if constexpr (SerializableStdArray<T>) {
+        return std::tuple_size_v<T> * size_of<typename T::value_type>(); 
+    } else if constexpr (SerializableAggregate<T>) {
+        std::size_t total = 0;
+        template for (constexpr auto member : data_members_of<T>) {
+            total += size_of<typename[:std::meta::type_of(member):]>();
+        }
+        return total;
     }
-    return total;
+    return 1;
 }
 
 template<typename T>
 inline constexpr std::size_t raw_size = size_of<T>();
 
 template<SerializableScalar T, EndianType Endian>
-constexpr std::span<std::byte> serialize(
+constexpr std::span<std::byte> serialize_scalar(
     std::span<std::byte> destination, 
     const T& source,
     [[maybe_unused]] Endian endianness
@@ -166,8 +173,20 @@ constexpr std::span<std::byte> serialize(
     return destination.subspan(value_byte_count);
 }
 
+template<SerializableStdArray T, EndianType Endian>
+constexpr std::span<std::byte> serialize_array(
+    std::span<std::byte> destination, 
+    const T& source,
+    Endian endianness
+) {
+    std::invoke([&]<std::size_t... Is>(std::index_sequence<Is...>) {
+        ((destination = serialize(destination, source[Is], endianness)), ...);
+    }, std::make_index_sequence<std::tuple_size_v<T>>{});
+    return destination;
+}
+
 template<SerializableAggregate T, EndianType Endian>
-constexpr std::span<std::byte> serialize(
+constexpr std::span<std::byte> serialize_aggregate(
     std::span<std::byte> destination, 
     const T& source,
     Endian endianness
@@ -179,20 +198,25 @@ constexpr std::span<std::byte> serialize(
     return destination;
 }
 
-template<SerializableStdArray T, EndianType Endian>
+template<typename T, EndianType Endian> 
 constexpr std::span<std::byte> serialize(
     std::span<std::byte> destination, 
     const T& source,
     Endian endianness
-) {
-    std::invoke([&]<std::size_t... Is>(std::index_sequence<Is...>) {
-        ((destination = serialize(destination, source[Is], endianness)), ...);
-    }, std::make_index_sequence<std::tuple_size_v<T>>{});
-    return destination;
+) { 
+    if constexpr (SerializableScalar<T>) {
+        return serialize_scalar(destination, source, endianness); 
+    } else if constexpr (SerializableStdArray<T>) {
+        return serialize_array(destination, source, endianness); 
+    } else if constexpr (SerializableAggregate<T>) {
+        return serialize_aggregate(destination, source, endianness); 
+    } else {
+        std::unreachable();
+    }
 }
 
 template<SerializableScalar T, EndianType Endian>
-constexpr std::span<const std::byte> deserialize(
+constexpr std::span<const std::byte> deserialize_scalar(
     T& destination, 
     std::span<const std::byte> source,
     [[maybe_unused]] Endian endianness
@@ -225,8 +249,20 @@ constexpr std::span<const std::byte> deserialize(
     return source.subspan(value_byte_count);
 }
 
+template<SerializableStdArray T, EndianType Endian>
+constexpr std::span<const std::byte> deserialize_array(
+    T& destination, 
+    std::span<const std::byte> source,
+    Endian endianness
+) {
+    std::invoke([&]<std::size_t... Is>(std::index_sequence<Is...>) {
+        ((source = deserialize(destination[Is], source, endianness)), ...);
+    }, std::make_index_sequence<std::tuple_size_v<T>>{});
+    return source;
+}
+
 template<SerializableAggregate T, EndianType Endian>
-constexpr std::span<const std::byte> deserialize(
+constexpr std::span<const std::byte> deserialize_aggregate(
     T& destination, 
     std::span<const std::byte> source,
     Endian endianness
@@ -238,16 +274,21 @@ constexpr std::span<const std::byte> deserialize(
     return source;
 }
 
-template<SerializableStdArray T, EndianType Endian>
+template<typename T, EndianType Endian> 
 constexpr std::span<const std::byte> deserialize(
     T& destination, 
     std::span<const std::byte> source,
     Endian endianness
-) {
-    std::invoke([&]<std::size_t... Is>(std::index_sequence<Is...>) {
-        ((source = deserialize(destination[Is], source, endianness)), ...);
-    }, std::make_index_sequence<std::tuple_size_v<T>>{});
-    return source;
+) { 
+    if constexpr (SerializableScalar<T>) {
+        return deserialize_scalar(destination, source, endianness); 
+    } else if constexpr (SerializableStdArray<T>) {
+        return deserialize_array(destination, source, endianness); 
+    } else if constexpr (SerializableAggregate<T>) {
+        return deserialize_aggregate(destination, source, endianness); 
+    } else {
+        std::unreachable();
+    }
 }
 
 template<std::uint8_t depth>
