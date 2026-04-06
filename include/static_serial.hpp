@@ -103,7 +103,7 @@ consteval bool has_annotation(std::meta::info info) {
 }
 
 template<typename T>
-consteval auto data_members_of() {
+consteval auto get_data_members_of() {
     static constexpr auto skip_serialization = std::views::filter([](auto info) { 
         return !has_annotation<skipserialization>(info); 
     });
@@ -114,6 +114,9 @@ consteval auto data_members_of() {
     );
 }
 
+template<typename T>
+inline constexpr auto data_members_of = get_data_members_of<T>();
+
 template<SerializableScalar T>
 consteval std::size_t size_of() { return std::meta::size_of(^^T); }
 
@@ -123,7 +126,7 @@ consteval std::size_t size_of() { return std::tuple_size_v<T> * size_of<typename
 template<SerializableAggregate T>
 consteval std::size_t size_of() { 
     std::size_t total = 0;
-    template for (constexpr auto member : data_members_of<T>()) {
+    template for (constexpr auto member : data_members_of<T>) {
         total += size_of<typename[:std::meta::type_of(member):]>();
     }
     return total;
@@ -169,7 +172,7 @@ constexpr std::span<std::byte> serialize(
     const T& source,
     Endian endianness
 ) {
-    template for (constexpr auto member : data_members_of<T>()) {
+    template for (constexpr auto member : data_members_of<T>) {
         destination = serialize(destination, source.[:member:], endianness);
     }
 
@@ -228,7 +231,7 @@ constexpr std::span<const std::byte> deserialize(
     std::span<const std::byte> source,
     Endian endianness
 ) {
-    template for (constexpr auto member: data_members_of<T>()) {
+    template for (constexpr auto member: data_members_of<T>) {
         source = deserialize(destination.[:member:], source, endianness);
     }
 
@@ -287,7 +290,7 @@ std::string generate_schema() {
 
 template<SerializableAggregate T, std::uint8_t depth>
 std::string generate_schema() {
-    static constexpr auto data_members = data_members_of<T>();
+    static constexpr auto data_members = data_members_of<T>;
 
     constexpr auto fields = data_members.size();
     std::string schema_out = std::format("{} [{} fields]", type_header<T>(), fields);
@@ -319,7 +322,7 @@ template<typename T>
     if constexpr (details::SerializableScalar<T>) {
         return !details::NotSerializable<T>;
     } else if constexpr (details::SerializableAggregate<T>) {
-        template for (constexpr auto member: details::data_members_of<T>()) {
+        template for (constexpr auto member: details::data_members_of<T>) {
             if (!is_serializable<typename[:std::meta::type_of(member):]>()) {
                 return false;
             }
