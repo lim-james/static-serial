@@ -43,36 +43,38 @@ template<typename T>
 using uint_of_size_t = typename uint_of_size<sizeof(T)>::type; 
 
 template<typename T>
-concept SerializableScalar = std::is_scalar_v<T>;
+concept NotSerializable = std::is_pointer_v<T> 
+                       || std::is_null_pointer_v<T> 
+                       || std::is_polymorphic_v<T>
+                       || !std::is_standard_layout_v<T>;
 
 template<typename T>
-concept SerializableStdArray = requires {
+concept Scalar = std::is_scalar_v<T>;
+
+template<typename T>
+concept StaticContainer = requires {
     typename T::value_type;
     typename std::tuple_size<T>::type;
 } && std::is_trivially_copyable_v<typename T::value_type>;
 
 template<typename T>
-concept SerializableAggregate = std::is_standard_layout_v<T> &&
-                                std::is_trivially_destructible_v<T> &&
-                                !SerializableScalar<T> &&
-                                !SerializableStdArray<T>;
+concept Aggregate = !Scalar<T> &&
+                    !StaticContainer<T> &&
+                    std::is_standard_layout_v<T>;
 
 template<typename T>
-concept NotSerializable = std::is_pointer_v<T> || std::is_null_pointer_v<T>;
-
-template<typename T>
-concept Serializable = (SerializableScalar<T> 
-                    || SerializableStdArray<T> 
-                    || SerializableAggregate<T>)
+concept Serializable = (Scalar<T> 
+                    || StaticContainer<T> 
+                    || Aggregate<T>)
                     && !NotSerializable<T>;
 
 template<typename T> consteval std::size_t size_of();
 
-template<SerializableScalar T, EndianType Endian>
+template<Scalar T, EndianType Endian>
 constexpr std::span<std::byte> serialize_scalar(std::span<std::byte>, const T&, Endian);
-template<SerializableStdArray T, EndianType Endian>
-constexpr std::span<std::byte> serialize_array(std::span<std::byte>, const T&, Endian);
-template<SerializableAggregate T, EndianType Endian>
+template<StaticContainer T, EndianType Endian>
+constexpr std::span<std::byte> serialize_static_container(std::span<std::byte>, const T&, Endian);
+template<Aggregate T, EndianType Endian>
 constexpr std::span<std::byte> serialize_aggregate(std::span<std::byte>, const T&, Endian);
 
 template<Serializable T, EndianType Endian>
@@ -81,11 +83,11 @@ template<NotSerializable T, EndianType Endian>
 constexpr std::span<std::byte> serialize(std::span<std::byte>, const T&, Endian) 
     = delete("Type not supported for static serialization");
 
-template<SerializableScalar T, EndianType Endian>
+template<Scalar T, EndianType Endian>
 constexpr std::span<const std::byte> deserialize_scalar(T&, std::span<const std::byte>, Endian);
-template<SerializableStdArray T, EndianType Endian>
-constexpr std::span<const std::byte> deserialize_array(T&, std::span<const std::byte>, Endian);
-template<SerializableAggregate T, EndianType Endian>
+template<StaticContainer T, EndianType Endian>
+constexpr std::span<const std::byte> deserialize_static_container(T&, std::span<const std::byte>, Endian);
+template<Aggregate T, EndianType Endian>
 constexpr std::span<const std::byte> deserialize_aggregate(T&, std::span<const std::byte>, Endian);
 
 template<Serializable T, EndianType Endian>
@@ -95,9 +97,9 @@ constexpr std::span<const std::byte> deserialize(T&, std::span<const std::byte>,
     = delete("Type not supported for static serialization");
 
 
-template<SerializableScalar T,    std::uint8_t depth> std::string generate_schema();
-template<SerializableStdArray T,  std::uint8_t depth> std::string generate_schema();
-template<SerializableAggregate T, std::uint8_t depth> std::string generate_schema();
+template<Scalar T,    std::uint8_t depth> std::string generate_schema();
+template<StaticContainer T,  std::uint8_t depth> std::string generate_schema();
+template<Aggregate T, std::uint8_t depth> std::string generate_schema();
 
 template<NotSerializable T, std::uint8_t depth>
 std::string generate_schema() = delete("Type not supported for static serialization");
@@ -115,29 +117,34 @@ consteval bool has_annotation(std::meta::info info) {
 }
 
 template<typename T>
-consteval auto get_data_members_of() {
+constexpr auto get_all_data_members_of() {
+    return std::meta::nonstatic_data_members_of(
+        ^^T, 
+        std::meta::access_context::unchecked()
+    );;
+}
+
+template<typename T>
+consteval auto get_serializable_members_of() {
     static constexpr auto skip_serialization = std::views::filter([](auto info) { 
         return !has_annotation<skipserialization>(info); 
     });
 
-    return std::define_static_array(
-        std::meta::nonstatic_data_members_of(^^T, std::meta::access_context::unchecked())
-        | skip_serialization
-    );
+    return std::define_static_array(get_all_data_members_of<T>() | skip_serialization);
 }
 
 template<typename T>
-inline constexpr auto data_members_of = get_data_members_of<T>();
+inline constexpr auto serializable_members_of = get_serializable_members_of<T>();
 
 template<typename T>
 consteval std::size_t size_of() { 
-    if constexpr (SerializableScalar<T>) {
+    if constexpr (Scalar<T>) {
         return std::meta::size_of(^^T); 
-    } else if constexpr (SerializableStdArray<T>) {
+    } else if constexpr (StaticContainer<T>) {
         return std::tuple_size_v<T> * size_of<typename T::value_type>(); 
-    } else if constexpr (SerializableAggregate<T>) {
+    } else if constexpr (Aggregate<T>) {
         std::size_t total = 0;
-        template for (constexpr auto member : data_members_of<T>) {
+        template for (constexpr auto member : serializable_members_of<T>) {
             total += size_of<typename[:std::meta::type_of(member):]>();
         }
         return total;
@@ -148,7 +155,7 @@ consteval std::size_t size_of() {
 template<typename T>
 inline constexpr std::size_t raw_size = size_of<T>();
 
-template<SerializableScalar T, EndianType Endian>
+template<Scalar T, EndianType Endian>
 constexpr std::span<std::byte> serialize_scalar(
     std::span<std::byte> destination, 
     const T& source,
@@ -179,8 +186,8 @@ constexpr std::span<std::byte> serialize_scalar(
     return destination.subspan(value_byte_count);
 }
 
-template<SerializableStdArray T, EndianType Endian>
-constexpr std::span<std::byte> serialize_array(
+template<StaticContainer T, EndianType Endian>
+constexpr std::span<std::byte> serialize_static_container(
     std::span<std::byte> destination, 
     const T& source,
     Endian endianness
@@ -191,13 +198,13 @@ constexpr std::span<std::byte> serialize_array(
     return destination;
 }
 
-template<SerializableAggregate T, EndianType Endian>
+template<Aggregate T, EndianType Endian>
 constexpr std::span<std::byte> serialize_aggregate(
     std::span<std::byte> destination, 
     const T& source,
     Endian endianness
 ) {
-    template for (constexpr auto member : data_members_of<T>) {
+    template for (constexpr auto member : serializable_members_of<T>) {
         destination = serialize(destination, source.[:member:], endianness);
     }
 
@@ -210,18 +217,18 @@ constexpr std::span<std::byte> serialize(
     const T& source,
     Endian endianness
 ) { 
-    if constexpr (SerializableScalar<T>) {
+    if constexpr (Scalar<T>) {
         return serialize_scalar(destination, source, endianness); 
-    } else if constexpr (SerializableStdArray<T>) {
-        return serialize_array(destination, source, endianness); 
-    } else if constexpr (SerializableAggregate<T>) {
+    } else if constexpr (StaticContainer<T>) {
+        return serialize_static_container(destination, source, endianness); 
+    } else if constexpr (Aggregate<T>) {
         return serialize_aggregate(destination, source, endianness); 
     } else {
         std::unreachable();
     }
 }
 
-template<SerializableScalar T, EndianType Endian>
+template<Scalar T, EndianType Endian>
 constexpr std::span<const std::byte> deserialize_scalar(
     T& destination, 
     std::span<const std::byte> source,
@@ -255,8 +262,8 @@ constexpr std::span<const std::byte> deserialize_scalar(
     return source.subspan(value_byte_count);
 }
 
-template<SerializableStdArray T, EndianType Endian>
-constexpr std::span<const std::byte> deserialize_array(
+template<StaticContainer T, EndianType Endian>
+constexpr std::span<const std::byte> deserialize_static_container(
     T& destination, 
     std::span<const std::byte> source,
     Endian endianness
@@ -267,13 +274,13 @@ constexpr std::span<const std::byte> deserialize_array(
     return source;
 }
 
-template<SerializableAggregate T, EndianType Endian>
+template<Aggregate T, EndianType Endian>
 constexpr std::span<const std::byte> deserialize_aggregate(
     T& destination, 
     std::span<const std::byte> source,
     Endian endianness
 ) {
-    template for (constexpr auto member: data_members_of<T>) {
+    template for (constexpr auto member: serializable_members_of<T>) {
         source = deserialize(destination.[:member:], source, endianness);
     }
 
@@ -286,11 +293,11 @@ constexpr std::span<const std::byte> deserialize(
     std::span<const std::byte> source,
     Endian endianness
 ) { 
-    if constexpr (SerializableScalar<T>) {
+    if constexpr (Scalar<T>) {
         return deserialize_scalar(destination, source, endianness); 
-    } else if constexpr (SerializableStdArray<T>) {
-        return deserialize_array(destination, source, endianness); 
-    } else if constexpr (SerializableAggregate<T>) {
+    } else if constexpr (StaticContainer<T>) {
+        return deserialize_static_container(destination, source, endianness); 
+    } else if constexpr (Aggregate<T>) {
         return deserialize_aggregate(destination, source, endianness); 
     } else {
         std::unreachable();
@@ -313,12 +320,12 @@ std::string type_header() {
     return std::format("[{} :: {} bytes]", type, raw_size<T>);
 }
 
-template<SerializableScalar T, std::uint8_t depth>
+template<Scalar T, std::uint8_t depth>
 std::string generate_schema() {
     return type_header<T>();
 }
 
-template<SerializableStdArray T, std::uint8_t depth>
+template<StaticContainer T, std::uint8_t depth>
 std::string generate_schema() {
     auto schema_out = type_header<T>();
 
@@ -335,9 +342,9 @@ std::string generate_schema() {
     return schema_out;
 }
 
-template<SerializableAggregate T, std::uint8_t depth>
+template<Aggregate T, std::uint8_t depth>
 std::string generate_schema() {
-    static constexpr auto data_members = data_members_of<T>;
+    static constexpr auto data_members = serializable_members_of<T>;
 
     constexpr auto fields = data_members.size();
     std::string schema_out = std::format("{} [{} fields]", type_header<T>(), fields);
@@ -370,18 +377,21 @@ template<typename T>
     
     if constexpr (details::NotSerializable<T_NORM>) {
         return false;
-    } else if constexpr (details::SerializableScalar<T_NORM>) {
-        return !details::NotSerializable<T_NORM>;
-    } else if constexpr (details::SerializableStdArray<T_NORM>) {
+    } else if constexpr (details::Scalar<T_NORM>) {
+        return true;
+    } else if constexpr (details::StaticContainer<T_NORM>) {
         return is_serializable<typename T_NORM::value_type>();
-    } else if constexpr (details::SerializableAggregate<T_NORM>) {
-        template for (constexpr auto member: details::data_members_of<T_NORM>) {
+    } else if constexpr (details::Aggregate<T_NORM>) {
+        template for (constexpr auto member: details::serializable_members_of<T_NORM>) {
             if (!is_serializable<typename[:std::meta::type_of(member):]>()) {
                 return false;
             }
         }
         return true;
-    } 
+    } else {
+        std::unreachable(); 
+    }   
+
     return false;
 }
 
