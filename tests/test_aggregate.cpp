@@ -34,3 +34,23 @@ static_assert(stse::test::test_back_and_forth<player>(), "Back-&-Forth failed fo
 
 static constexpr std::pair std_pair{1, 2};
 static_assert(stse::test::test_back_and_forth<std_pair>(), "Back-&-Forth failed for std::pair");
+
+///
+/// Inherited Types
+///
+
+struct Base { 
+    int a; 
+    bool operator==(const Base&) const = default;
+};
+struct Derived: Base { 
+    int b; 
+    bool operator==(const Derived&) const = default;
+};
+
+static_assert(stse::is_serializable<Base>());
+static_assert(stse::is_serializable<Derived>());
+
+static constexpr Derived derived{{1}, 2};
+static_assert(stse::test::test_back_and_forth<derived>(), "Back-&-Forth failed for Derived Type");
+

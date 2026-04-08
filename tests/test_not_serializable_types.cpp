@@ -3,50 +3,37 @@
 #include <string>
 #include <vector>
 
-static_assert(!stse::is_serializable<int*>());
-
-class PrivatePointer {
-    int* i = nullptr;
-};
-
-static_assert(!stse::is_serializable<PrivatePointer>());
-
-struct NestedObjectWithPointer {
-    struct {
-        int* i = nullptr;
-    } nested_ptr;
-};
-
-static_assert(!stse::is_serializable<NestedObjectWithPointer>());
-
-struct NestedArrayObjectWithPointer {
-    struct {
-        std::array<int*, 5> i{};
-    } nested_ptr;
-};
-
-static_assert(!stse::is_serializable<NestedArrayObjectWithPointer>());
-
-static_assert(!stse::is_serializable<char[16]>());
-static_assert(!stse::is_serializable<std::string>());
-static_assert(!stse::is_serializable<std::vector<int>>());
+static_assert(stse::is_serializable<int*>()             == false);
+static_assert(stse::is_serializable<char[16]>()         == false);
+static_assert(stse::is_serializable<std::string>()      == false);
+static_assert(stse::is_serializable<std::vector<int>>() == false);
 
 static_assert(stse::is_serializable<std::array<int, 5>>());
 static_assert(stse::is_serializable<std::pair<int, int>>());
 
-///
-/// Inherited Types
-///
+class PrivatePointer { int* i = nullptr; };
+static_assert(stse::is_serializable<PrivatePointer>() == false);
 
-struct Base {
-    int a;
-    bool operator==(const Base&) const = default;
+struct NestedObjectWithPointer {
+    PrivatePointer nested_ptr;
 };
 
-struct Derived: Base {
-    int b;
-    bool operator==(const Derived&) const = default;
+static_assert(stse::is_serializable<NestedObjectWithPointer>() == false);
+
+struct NestedArrayObjectWithPointer {
+    struct { std::array<int*, 5> i{}; } nested_ptr;
 };
 
-static_assert(!stse::is_serializable<Derived>());
+static_assert(stse::is_serializable<NestedArrayObjectWithPointer>() == false);
 
+///
+/// Virtual Types
+///
+
+struct VirtualBase { virtual void foo() {} };
+struct VirtualDerived: VirtualBase { void foo() override {} };
+struct NonVirtualDerived: VirtualBase { int a; };
+
+static_assert(stse::is_serializable<VirtualBase>()       == false);
+static_assert(stse::is_serializable<VirtualDerived>()    == false);
+static_assert(stse::is_serializable<NonVirtualDerived>() == false);
