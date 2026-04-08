@@ -171,6 +171,7 @@ constexpr auto members = std::meta::nonstatic_data_members_of(
 );
 static_assert(members.size() == 0); // will pass
 ```
+    - use `bases_of` to recursively fetch parent members (std::vector likely had its main mmeber in a subclass)
 
 ## Known issues
 
