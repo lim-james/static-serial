@@ -432,9 +432,9 @@ template<typename T, detail::EndianType Endian = detail::NativeEndian>
 [[nodiscard]] constexpr auto serialize(
     const T& data, 
     Endian endianness = {}
-) -> std::array<std::byte, detail::raw_size<T>> {
+) -> std::array<std::byte, serial_size_v<T>> {
     if constexpr (is_serializable_v<T>) {
-        auto buffer = std::array<std::byte, detail::raw_size<T>>{};
+        auto buffer = std::array<std::byte, serial_size_v<T>>{};
         detail::serialize(buffer, data, endianness);
         return buffer;
     } else {
@@ -467,7 +467,7 @@ template<typename T, detail::EndianType Endian = detail::NativeEndian>
     Endian endianness = {}
 ) -> DeserializeResult<T> {
     if constexpr (is_serializable_v<T>) {
-        assert(data.size() >= detail::raw_size<T>);
+        assert(data.size() >= serial_size_v<T>);
 
         auto parsed = T{};
         auto remaining_ptr = detail::deserialize(parsed, data, endianness);
@@ -487,7 +487,7 @@ constexpr auto deserialize_advance(
     Endian endianness = {}
 ) -> std::span<const std::byte> {
     if constexpr (is_serializable_v<T>) {
-        assert(data.size() >= detail::raw_size<T>);
+        assert(data.size() >= serial_size_v<T>);
         return detail::deserialize(parsed, data, endianness);
     } else {
         static_assert(is_serializable_v<T>, "Type not deserializable.");
