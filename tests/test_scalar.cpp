@@ -15,18 +15,18 @@ static constexpr float  f = 3.14f;
 static constexpr double d = 123.45;
 static constexpr bool   b = false;
 
-static_assert(stse::test::test_back_and_forth<c>(), "Back-&-Forth failed for char");
-static_assert(stse::test::test_back_and_forth<i>(), "Back-&-Forth failed for int");
-static_assert(stse::test::test_back_and_forth<f>(), "Back-&-Forth failed for float");
-static_assert(stse::test::test_back_and_forth<d>(), "Back-&-Forth failed for double");
-static_assert(stse::test::test_back_and_forth<b>(), "Back-&-Forth failed for bool");
+static_assert(stse::test::test_round_trip<c>(), "Round trip failed for char");
+static_assert(stse::test::test_round_trip<i>(), "Round trip failed for int");
+static_assert(stse::test::test_round_trip<f>(), "Round trip failed for float");
+static_assert(stse::test::test_round_trip<d>(), "Round trip failed for double");
+static_assert(stse::test::test_round_trip<b>(), "Round trip failed for bool");
 
 enum UnscopedEnum { option_a, option_b }; 
 static constexpr UnscopedEnum u = UnscopedEnum::option_a;
 static_assert(stse::is_serializable_v<UnscopedEnum>);
-static_assert(stse::test::test_back_and_forth<u>(), "Back-&-Forth failed for unscoped enum");
+static_assert(stse::test::test_round_trip<u>(), "Round trip failed for unscoped enum");
 
 enum class ScopedEnum { option_a, option_b }; 
 static constexpr ScopedEnum e = ScopedEnum::option_a;
 static_assert(stse::is_serializable_v<ScopedEnum>);
-static_assert(stse::test::test_back_and_forth<e>(), "Back-&-Forth failed for scoped enum");
+static_assert(stse::test::test_round_trip<e>(), "Round trip failed for scoped enum");
