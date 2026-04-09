@@ -460,7 +460,7 @@ template<typename T, detail::EndianType Endian = detail::NativeEndian>
     if constexpr (is_serializable_v<T>) {
         assert(data.size() >= detail::raw_size<T>);
 
-        T parsed;
+        auto parsed = T{};
         auto offset_ptr = detail::deserialize(parsed, data, endianness);
         return DeserializeResult{
             .object = parsed, 
