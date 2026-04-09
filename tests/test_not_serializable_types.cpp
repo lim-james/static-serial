@@ -1,6 +1,7 @@
 #include "static_serial.hpp"
 
 #include <string>
+#include <string_view>
 
 #include <vector>
 #include <deque>
@@ -15,7 +16,8 @@
 #include <stack>
 #include <queue>
 
-static_assert(stse::is_serializable_v<std::string> == false);
+static_assert(stse::is_serializable_v<std::string>      == false);
+static_assert(stse::is_serializable_v<std::string_view> == false);
 
 using serializable_t = int;
 
