@@ -442,11 +442,11 @@ template<typename T, detail::EndianType Endian = detail::NativeEndian>
 }
 
 template<typename T, detail::EndianType Endian = detail::NativeEndian> 
-constexpr std::span<std::byte> serialize_advance(
+constexpr auto serialize_advance(
     const T& data, 
     std::span<std::byte> destination,
     Endian endianness = {}
-) {
+) -> std::span<std::byte> {
     if constexpr (is_serializable_v<T>) {
         return detail::serialize(destination, data, endianness);
     } else {
