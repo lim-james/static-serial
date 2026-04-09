@@ -68,7 +68,7 @@ concept Serializable = (Scalar<T>
                     || Aggregate<T>)
                     && !NotSerializable<T>;
 
-template<typename T> consteval std::size_t size_of();
+template<Serializable T> consteval std::size_t size_of();
 
 template<Scalar T, EndianType Endian>
 constexpr std::span<std::byte> serialize_scalar(std::span<std::byte>, const T&, Endian);
@@ -148,7 +148,7 @@ consteval auto get_serializable_members_of() {
 template<typename T>
 inline constexpr auto serializable_members_of = get_serializable_members_of<T>();
 
-template<typename T>
+template<Serializable T>
 consteval std::size_t size_of() { 
     if constexpr (Scalar<T>) {
         return std::meta::size_of(^^T); 
