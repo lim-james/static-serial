@@ -475,7 +475,7 @@ template<typename T, detail::EndianType Endian = detail::NativeEndian>
 }
 
 template<typename T, detail::EndianType Endian = detail::NativeEndian>
-[[nodiscard]] constexpr auto deserialize_advance(
+constexpr auto deserialize_advance(
     std::span<const std::byte> data, 
     T& parsed,
     Endian endianness = {}
