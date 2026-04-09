@@ -419,8 +419,6 @@ template<typename T>
     } else {
         std::unreachable(); 
     }   
-
-    return false;
 }
 
 
