@@ -100,12 +100,11 @@ struct DeserializeResult {
 };
 ```
 
-### Supported Types
-> Intend to better define this in a future patch
+### Serializable Types
 
-A rule-of-thumb is serializable objects should have standard layout and no heap
-owning members/pointers.
+A rule-of-thumb is serializable objects should have no heap owning members/pointers, and should not inherit from a polymorphic class
 
+- Decided to mark polymorphic classes are not serializable because of the existence of vptr
 
 | Serializable | Non-Serializable |
 | --- | --- |
