@@ -9,10 +9,10 @@ struct PaddedStruct {
     bool operator==(const PaddedStruct&) const = default;
 };
 
+static constexpr std::size_t COMPACT_SIZE = sizeof(char) + sizeof(std::uint64_t);
+
 static constexpr PaddedStruct padded{'a', 0};
 static constexpr auto bytes = stse::serialize(padded);
 static_assert(bytes.size() != sizeof(PaddedStruct));
-static_assert(bytes.size() == 9);
+static_assert(bytes.size() == COMPACT_SIZE);
 static_assert(stse::deserialize<PaddedStruct>(bytes).object == padded);
-
-
