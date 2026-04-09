@@ -20,7 +20,7 @@
 
 namespace stse {
 
-namespace details {
+namespace detail {
 
 struct BigEndian    { static constexpr std::endian endian = std::endian::big; };
 struct LittleEndian { static constexpr std::endian endian = std::endian::little; };
@@ -372,24 +372,24 @@ std::string generate_schema() {
 
 }
 
-inline constexpr details::BigEndian    big_endian{};
-inline constexpr details::LittleEndian little_endian{};
-inline constexpr details::NativeEndian native_endian{};
+inline constexpr detail::BigEndian    big_endian{};
+inline constexpr detail::LittleEndian little_endian{};
+inline constexpr detail::NativeEndian native_endian{};
 
-inline constexpr auto skip = details::skipserialization{};
+inline constexpr auto skip = detail::skipserialization{};
 
 template<typename T>
 [[nodiscard]] consteval bool is_serializable() {
     using T_NORM = std::decay_t<T>;
     
-    if constexpr (details::NotSerializable<T_NORM>) {
+    if constexpr (detail::NotSerializable<T_NORM>) {
         return false;
-    } else if constexpr (details::Scalar<T_NORM>) {
+    } else if constexpr (detail::Scalar<T_NORM>) {
         return true;
-    } else if constexpr (details::StaticContainer<T_NORM>) {
+    } else if constexpr (detail::StaticContainer<T_NORM>) {
         return is_serializable<typename T_NORM::value_type>();
-    } else if constexpr (details::Aggregate<T_NORM>) {
-        template for (constexpr auto member: details::serializable_members_of<T_NORM>) {
+    } else if constexpr (detail::Aggregate<T_NORM>) {
+        template for (constexpr auto member: detail::serializable_members_of<T_NORM>) {
             if (!is_serializable<typename[:std::meta::type_of(member):]>()) {
                 return false;
             }
@@ -402,28 +402,28 @@ template<typename T>
     return false;
 }
 
-template<typename T, details::EndianType Endian = details::NativeEndian> 
+template<typename T, detail::EndianType Endian = detail::NativeEndian> 
 [[nodiscard]] constexpr auto serialize(
     const T& data, 
     Endian endianness = {}
-) -> std::array<std::byte, details::raw_size<T>> {
+) -> std::array<std::byte, detail::raw_size<T>> {
     if constexpr (is_serializable<T>()) {
-        auto buffer = std::array<std::byte, details::raw_size<T>>{};
-        details::serialize(buffer, data, endianness);
+        auto buffer = std::array<std::byte, detail::raw_size<T>>{};
+        detail::serialize(buffer, data, endianness);
         return buffer;
     } else {
         static_assert(is_serializable<T>(), "Type not serializable.");
     }
 }
 
-template<typename T, details::EndianType Endian = details::NativeEndian> 
+template<typename T, detail::EndianType Endian = detail::NativeEndian> 
 constexpr std::span<std::byte> serialize_into(
     const T& data, 
     std::span<std::byte> destination,
     Endian endianness = {}
 ) {
     if constexpr (is_serializable<T>()) {
-        return details::serialize(destination, data, endianness);
+        return detail::serialize(destination, data, endianness);
     } else {
         static_assert(is_serializable<T>(), "Type not serializable.");
     }
@@ -435,16 +435,16 @@ struct DeserializeResult {
     std::span<const std::byte> offset;
 };
 
-template<typename T, details::EndianType Endian = details::NativeEndian>
+template<typename T, detail::EndianType Endian = detail::NativeEndian>
 [[nodiscard]] constexpr auto deserialize(
     std::span<const std::byte> data, 
     Endian endianness = {}
 ) -> DeserializeResult<T> {
     if constexpr (is_serializable<T>()) {
-        assert(data.size() >= details::raw_size<T>);
+        assert(data.size() >= detail::raw_size<T>);
 
         T parsed;
-        auto offset_ptr = details::deserialize(parsed, data, endianness);
+        auto offset_ptr = detail::deserialize(parsed, data, endianness);
         return DeserializeResult{
             .object = parsed, 
             .offset = offset_ptr
@@ -457,7 +457,7 @@ template<typename T, details::EndianType Endian = details::NativeEndian>
 template<typename T>
 [[nodiscard]] std::string schema() {
     if constexpr (is_serializable<T>()) {
-        return details::generate_schema<T, 0>();
+        return detail::generate_schema<T, 0>();
     } else {
         return std::format("{} [{}]", std::meta::identifier_of(^^T), "Type not serializable.");
     }
