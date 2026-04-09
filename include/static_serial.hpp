@@ -120,7 +120,7 @@ constexpr auto get_all_data_members_of() {
     auto data_members = std::meta::nonstatic_data_members_of(
         ^^T, 
         std::meta::access_context::unchecked()
-    );;
+    );
 
     constexpr auto bases = std::meta::bases_of(^^T, std::meta::access_context::unchecked());
 
