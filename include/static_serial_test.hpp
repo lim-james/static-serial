@@ -14,8 +14,10 @@ constexpr bool test_round_trip_heap() {
 template<auto data>
 constexpr bool test_round_trip_inplace() {
     auto raw_bytes = std::array<std::byte, sizeof(data)>{};
+    auto restored = decltype(data){};
+
     stse::serialize_advance(data, raw_bytes);
-    auto restored = stse::deserialize<decltype(data)>(raw_bytes).object;
+    stse::deserialize_advance(raw_bytes, restored);
     return data == restored;
 }
 

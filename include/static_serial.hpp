@@ -476,6 +476,20 @@ template<typename T, detail::EndianType Endian = detail::NativeEndian>
     }
 }
 
+template<typename T, detail::EndianType Endian = detail::NativeEndian>
+[[nodiscard]] constexpr auto deserialize_advance(
+    std::span<const std::byte> data, 
+    T& parsed,
+    Endian endianness = {}
+) -> std::span<const std::byte> {
+    if constexpr (is_serializable_v<T>) {
+        assert(data.size() >= detail::raw_size<T>);
+        return detail::deserialize(parsed, data, endianness);
+    } else {
+        static_assert(is_serializable_v<T>, "Type not deserializable.");
+    }
+}
+
 template<typename T>
 [[nodiscard]] std::string schema() {
     if constexpr (is_serializable_v<T>) {
