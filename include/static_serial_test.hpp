@@ -17,7 +17,7 @@ constexpr bool test_round_trip_inplace() {
     auto restored = decltype(data){};
 
     stse::serialize_advance(data, raw_bytes);
-    stse::deserialize_advance(raw_bytes, restored);
+    stse::deserialize_advance(restored, raw_bytes);
     return data == restored;
 }
 
