@@ -8,8 +8,6 @@ static_assert(stse::is_serializable_v<float>);
 static_assert(stse::is_serializable_v<double>);
 static_assert(stse::is_serializable_v<long double>);
 static_assert(stse::is_serializable_v<bool>);
-static_assert(stse::is_serializable_v<UnscopedEnum>);
-static_assert(stse::is_serializable_v<ScopedEnum>);
 
 static constexpr char   c = '0';
 static constexpr int    i = 0;
@@ -25,8 +23,10 @@ static_assert(stse::test::test_back_and_forth<b>(), "Back-&-Forth failed for boo
 
 enum UnscopedEnum { option_a, option_b }; 
 static constexpr UnscopedEnum u = UnscopedEnum::option_a;
+static_assert(stse::is_serializable_v<UnscopedEnum>);
 static_assert(stse::test::test_back_and_forth<u>(), "Back-&-Forth failed for unscoped enum");
 
 enum class ScopedEnum { option_a, option_b }; 
 static constexpr ScopedEnum e = ScopedEnum::option_a;
+static_assert(stse::is_serializable_v<ScopedEnum>);
 static_assert(stse::test::test_back_and_forth<e>(), "Back-&-Forth failed for scoped enum");
