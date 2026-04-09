@@ -400,7 +400,7 @@ template<typename T>
 [[nodiscard]] consteval bool is_serializable();
 
 template<typename T>
-constexpr bool is_serializable_v = is_serializable<T>();
+inline constexpr bool is_serializable_v = is_serializable<T>();
 
 template<typename T>
 [[nodiscard]] consteval bool is_serializable() {
