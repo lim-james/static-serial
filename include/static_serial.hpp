@@ -449,7 +449,7 @@ constexpr std::span<std::byte> serialize_into(
 template<typename T>
 struct DeserializeResult {
     T object;
-    std::span<const std::byte> offset;
+    std::span<const std::byte> remaining;
 };
 
 template<typename T, detail::EndianType Endian = detail::NativeEndian>
@@ -461,10 +461,10 @@ template<typename T, detail::EndianType Endian = detail::NativeEndian>
         assert(data.size() >= detail::raw_size<T>);
 
         auto parsed = T{};
-        auto offset_ptr = detail::deserialize(parsed, data, endianness);
+        auto remaining_ptr = detail::deserialize(parsed, data, endianness);
         return DeserializeResult{
             .object = parsed, 
-            .offset = offset_ptr
+            .remaining = remaining_ptr
         };
     } else {
         static_assert(is_serializable_v<T>, "Type not deserializable.");
