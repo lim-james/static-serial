@@ -41,7 +41,7 @@ template<typename T, EndianType Endian = NativeEndian>
 ) -> std::array<std::byte, raw_size<T>>;
 
 template<typename T, EndianType Endian = NativeEndian> 
-constexpr std::span<std::byte> serialize_into(
+constexpr std::span<std::byte> serialize_advance(
     const T& data, 
     std::span<std::byte> destination,
     Endian endianness = {}
