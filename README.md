@@ -61,7 +61,7 @@ constexpr auto deserialize_advance(
     T& parsed,
     std::span<const std::byte> data, 
     Endian endianness = {}
-) -> std::span<const std::byte> {
+) -> std::span<const std::byte>;
 ```
 
 **Skip Member Annotation**
