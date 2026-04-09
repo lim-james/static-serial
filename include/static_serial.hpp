@@ -493,7 +493,7 @@ template<typename T>
     if constexpr (is_serializable_v<T>) {
         return detail::generate_schema<T, 0>();
     } else {
-        static_assert(false, "Type not serializable.");
+        static_assert(is_serializable_v<T>, "Type not serializable.");
     }
 }
 
