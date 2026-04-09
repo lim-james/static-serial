@@ -14,9 +14,9 @@
 #include <format>
 #include <ranges>
 #include <algorithm>
+#include <utility>
 
 #include <meta>
-#include <utility>
 
 namespace stse {
 
@@ -96,8 +96,8 @@ constexpr std::span<const std::byte> deserialize(T&, std::span<const std::byte>,
     = delete("Type not supported for static serialization");
 
 
-template<Scalar T,    std::uint8_t depth> std::string generate_schema();
-template<StaticContainer T,  std::uint8_t depth> std::string generate_schema();
+template<Scalar T, std::uint8_t depth> std::string generate_schema();
+template<StaticContainer T, std::uint8_t depth> std::string generate_schema();
 template<Aggregate T, std::uint8_t depth> std::string generate_schema();
 
 template<NotSerializable T, std::uint8_t depth>
@@ -122,8 +122,9 @@ constexpr auto get_all_data_members_of() {
         std::meta::access_context::unchecked()
     );;
 
+    constexpr auto bases = std::meta::bases_of(^^T, std::meta::access_context::unchecked());
 
-    template for (constexpr auto base: std::define_static_array(std::meta::bases_of(^^T, std::meta::access_context::unchecked()))) {
+    template for (constexpr auto base: std::define_static_array(bases)) {
         auto parent_members = get_all_data_members_of<typename[:std::meta::type_of(base):]>();
         for (auto member: parent_members) data_members.push_back(member);
     }
