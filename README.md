@@ -56,7 +56,7 @@ constexpr std::span<std::byte> serialize_into(
 **Skip Member Annotation**
 ```cpp
 inline constexpr auto skip = skipserialization{};
-// e.g. [[=skip]] int* ignore_member;
+// e.g. [[=stse::skip]] int* ignore_member;
 ```
 
 **Check Serializability**
