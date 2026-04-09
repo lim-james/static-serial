@@ -21,6 +21,9 @@ auto restored  = stse::deserialize<OrderBookLevel>(raw_bytes).object;
 assert(bid == restored);
 assert(raw_bytes.size() != sizeof(OrderBookLevel));
 assert(raw_bytes.size() == 20); // excludes padding
+
+assert(stse::is_serializable_v<OrderBookLevel>);
+assert(stse::serial_size_v<OrderBookLevel> != sizeof(OrderBookLevel));
 ```
 
 ## Getting Started
@@ -51,6 +54,13 @@ constexpr std::span<std::byte> serialize_advance(
     std::span<const std::byte> data, 
     Endian endianness = {}
 ) -> DeserializeResult<T>;
+
+template<typename T, EndianType Endian = NativeEndian>
+constexpr auto deserialize_advance(
+    T& parsed,
+    std::span<const std::byte> data, 
+    Endian endianness = {}
+) -> std::span<const std::byte> {
 ```
 
 **Skip Member Annotation**
