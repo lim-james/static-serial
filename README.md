@@ -59,10 +59,13 @@ inline constexpr auto skip = skipserialization{};
 // e.g. [[=stse::skip]] int* ignore_member;
 ```
 
-**Check Serializability**
+**Properties**
 ```cpp
 template<typename T>
-constexpr bool is_serializable_v;
+inline constexpr bool is_serializable_v;
+
+template<typename T>
+inline constexpr std::size_t serial_size_v;
 ```
 
 **Endian Specifiers**

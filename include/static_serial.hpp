@@ -403,6 +403,9 @@ template<typename T>
 inline constexpr bool is_serializable_v = is_serializable<T>();
 
 template<typename T>
+inline constexpr std::size_t serial_size_v = detail::raw_size<T>;
+
+template<typename T>
 [[nodiscard]] consteval bool is_serializable() {
     using T_NORM = std::decay_t<T>;
     
