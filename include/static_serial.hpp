@@ -379,6 +379,12 @@ inline constexpr detail::NativeEndian native_endian{};
 inline constexpr auto skip = detail::skipserialization{};
 
 template<typename T>
+[[nodiscard]] consteval bool is_serializable();
+
+template<typename T>
+constexpr bool is_serializable_v = is_serializable<T>();
+
+template<typename T>
 [[nodiscard]] consteval bool is_serializable() {
     using T_NORM = std::decay_t<T>;
     
@@ -387,10 +393,10 @@ template<typename T>
     } else if constexpr (detail::Scalar<T_NORM>) {
         return true;
     } else if constexpr (detail::StaticContainer<T_NORM>) {
-        return is_serializable<typename T_NORM::value_type>();
+        return is_serializable_v<typename T_NORM::value_type>;
     } else if constexpr (detail::Aggregate<T_NORM>) {
         template for (constexpr auto member: detail::serializable_members_of<T_NORM>) {
-            if (!is_serializable<typename[:std::meta::type_of(member):]>()) {
+            if (!is_serializable_v<typename[:std::meta::type_of(member):]>) {
                 return false;
             }
         }
@@ -402,17 +408,18 @@ template<typename T>
     return false;
 }
 
+
 template<typename T, detail::EndianType Endian = detail::NativeEndian> 
 [[nodiscard]] constexpr auto serialize(
     const T& data, 
     Endian endianness = {}
 ) -> std::array<std::byte, detail::raw_size<T>> {
-    if constexpr (is_serializable<T>()) {
+    if constexpr (is_serializable_v<T>) {
         auto buffer = std::array<std::byte, detail::raw_size<T>>{};
         detail::serialize(buffer, data, endianness);
         return buffer;
     } else {
-        static_assert(is_serializable<T>(), "Type not serializable.");
+        static_assert(is_serializable_v<T>, "Type not serializable.");
     }
 }
 
@@ -422,10 +429,10 @@ constexpr std::span<std::byte> serialize_into(
     std::span<std::byte> destination,
     Endian endianness = {}
 ) {
-    if constexpr (is_serializable<T>()) {
+    if constexpr (is_serializable_v<T>) {
         return detail::serialize(destination, data, endianness);
     } else {
-        static_assert(is_serializable<T>(), "Type not serializable.");
+        static_assert(is_serializable_v<T>, "Type not serializable.");
     }
 }
 
@@ -440,7 +447,7 @@ template<typename T, detail::EndianType Endian = detail::NativeEndian>
     std::span<const std::byte> data, 
     Endian endianness = {}
 ) -> DeserializeResult<T> {
-    if constexpr (is_serializable<T>()) {
+    if constexpr (is_serializable_v<T>) {
         assert(data.size() >= detail::raw_size<T>);
 
         T parsed;
@@ -450,13 +457,13 @@ template<typename T, detail::EndianType Endian = detail::NativeEndian>
             .offset = offset_ptr
         };
     } else {
-        static_assert(is_serializable<T>(), "Type not deserializable.");
+        static_assert(is_serializable_v<T>, "Type not deserializable.");
     }
 }
 
 template<typename T>
 [[nodiscard]] std::string schema() {
-    if constexpr (is_serializable<T>()) {
+    if constexpr (is_serializable_v<T>) {
         return detail::generate_schema<T, 0>();
     } else {
         return std::format("{} [{}]", std::meta::identifier_of(^^T), "Type not serializable.");

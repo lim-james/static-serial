@@ -48,8 +48,8 @@ struct Derived: Base {
     bool operator==(const Derived&) const = default;
 };
 
-static_assert(stse::is_serializable<Base>());
-static_assert(stse::is_serializable<Derived>());
+static_assert(stse::is_serializable_v<Base>);
+static_assert(stse::is_serializable_v<Derived>);
 
 static constexpr Derived derived{{1}, 2};
 static_assert(stse::test::test_back_and_forth<derived>(), "Back-&-Forth failed for Derived Type");

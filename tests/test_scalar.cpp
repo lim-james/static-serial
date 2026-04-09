@@ -19,3 +19,5 @@ static_assert(stse::test::test_back_and_forth<u>(), "Back-&-Forth failed for uns
 enum class ScopedEnum { option_a, option_b }; 
 static constexpr ScopedEnum e = ScopedEnum::option_a;
 static_assert(stse::test::test_back_and_forth<e>(), "Back-&-Forth failed for scoped enum");
+
+static_assert(stse::is_serializable_v<int>);

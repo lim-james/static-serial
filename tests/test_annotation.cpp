@@ -1,9 +1,8 @@
 #include "static_serial.hpp"
 
-
 struct PartialSerializable {
     int a;
     [[=stse::skip]] int* b;
 };
 
-static_assert(stse::is_serializable<PartialSerializable>());
+static_assert(stse::is_serializable_v<PartialSerializable>);

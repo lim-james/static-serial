@@ -62,7 +62,7 @@ inline constexpr auto skip = skipserialization{};
 **Check Serializability**
 ```cpp
 template<typename T>
-[[nodiscard]] consteval bool is_serializable();
+constexpr bool is_serializable_v;
 ```
 
 **Endian Specifiers**
