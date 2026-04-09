@@ -50,6 +50,7 @@ constexpr std::span<std::byte> serialize_advance(
     Endian endianness = {}
 );
 
+template<typename T, EndianType Endian = NativeEndian>
 [[nodiscard]] constexpr auto deserialize(
     std::span<const std::byte> data, 
     Endian endianness = {}
