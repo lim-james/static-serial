@@ -2,6 +2,7 @@
 #include <array>
 #include <print>
 
+#include "include/static_serial.hpp"
 #include "static_serial.hpp"
 
 struct Price {
@@ -57,7 +58,7 @@ int main() {
     };
 
     auto raw_bytes = std::array<std::byte, 1024>{};
-    [[maybe_unused]] auto moved_ptr = stse::serialize_into(snapshot, raw_bytes);
+    [[maybe_unused]] auto moved_ptr = stse::serialize_advance(snapshot, raw_bytes);
     
     auto restored_snapshot = stse::deserialize<MarketSnapshot>(raw_bytes).object;
     assert(snapshot == restored_snapshot);
