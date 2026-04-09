@@ -317,12 +317,18 @@ constexpr std::span<const std::byte> deserialize(
 
 template<std::uint8_t depth>
 constexpr std::string_view pad() {
-    static constexpr auto padding = [] {
-        std::array<char, depth * 2> padding{};
-        padding.fill(' ');
-        return padding;
-    }();
-    return {padding.data(), padding.size()};
+    if constexpr (depth == 0) {
+        using namespace std::literals;
+        return ""sv;
+    } else {
+        static constexpr auto padding = [] {
+            std::array<char, depth * 2> padding{};
+            padding.fill(' ');
+            return padding;
+        }();
+        return {padding.data(), padding.size()};
+    }
+
 }
 
 template<typename T>
