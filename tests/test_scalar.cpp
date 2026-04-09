@@ -11,3 +11,11 @@ static_assert(stse::test::test_back_and_forth<i>(), "Back-&-Forth failed for int
 static_assert(stse::test::test_back_and_forth<f>(), "Back-&-Forth failed for float");
 static_assert(stse::test::test_back_and_forth<d>(), "Back-&-Forth failed for double");
 static_assert(stse::test::test_back_and_forth<b>(), "Back-&-Forth failed for bool");
+
+enum class UnscopedEnum { option_a, option_b }; 
+static constexpr UnscopedEnum u = UnscopedEnum::option_a;
+static_assert(stse::test::test_back_and_forth<u>(), "Back-&-Forth failed for unscoped enum");
+
+enum class ScopedEnum { option_a, option_b }; 
+static constexpr ScopedEnum e = ScopedEnum::option_a;
+static_assert(stse::test::test_back_and_forth<e>(), "Back-&-Forth failed for scoped enum");
