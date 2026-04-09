@@ -348,12 +348,16 @@ std::string generate_schema() {
     auto schema_out = type_header<T>();
 
     using child_type = typename T::value_type;
-    constexpr auto identifier = std::meta::identifier_of(^^child_type);
+    constexpr auto child_info  = std::meta::dealias(^^child_type);
+    constexpr auto identifier  = std::meta::display_string_of(child_info);
+    constexpr auto child_count = std::tuple_size_v<T>;
     auto meta_data  = generate_schema<child_type, depth + 1>();
+
     schema_out += std::format(
-        "\n{}{}: {}",
+        "\n{}{}[{}]: {}",
         pad<depth + 1>(),
         identifier,
+        child_count,
         meta_data 
     );
 
