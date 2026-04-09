@@ -159,8 +159,9 @@ consteval std::size_t size_of() {
             total += size_of<typename[:std::meta::type_of(member):]>();
         }
         return total;
+    } else {
+        std::unreachable();
     }
-    return 1;
 }
 
 template<typename T>
