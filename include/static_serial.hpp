@@ -481,7 +481,7 @@ template<typename T>
     if constexpr (is_serializable_v<T>) {
         return detail::generate_schema<T, 0>();
     } else {
-        return std::format("{} [{}]", std::meta::identifier_of(^^T), "Type not serializable.");
+        static_assert(false, "Type not serializable.");
     }
 }
 
