@@ -83,7 +83,7 @@ template<typename T>
 template<typename T>
 struct DeserializeResult {
     T object;
-    std::span<const std::byte> offset;
+    std::span<const std::byte> remaining;
 };
 ```
 
