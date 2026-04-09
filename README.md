@@ -104,7 +104,7 @@ struct DeserializeResult {
 
 A rule-of-thumb is serializable objects should have no heap owning members/pointers, and should not inherit from a polymorphic class
 
-- Decided to mark polymorphic classes are not serializable because of the existence of vptr
+- Decided to mark polymorphic classes as not serializable because of the existence of vptr
 
 | Serializable | Non-Serializable |
 | --- | --- |
