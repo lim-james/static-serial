@@ -117,19 +117,22 @@ consteval bool has_annotation(std::meta::info info) {
 
 template<typename T>
 constexpr auto get_all_data_members_of() {
-    auto data_members = std::meta::nonstatic_data_members_of(
-        ^^T, 
-        std::meta::access_context::unchecked()
-    );
+    auto all_data_members = std::vector<std::meta::info>{};
 
     constexpr auto bases = std::meta::bases_of(^^T, std::meta::access_context::unchecked());
 
     template for (constexpr auto base: std::define_static_array(bases)) {
         auto parent_members = get_all_data_members_of<typename[:std::meta::type_of(base):]>();
-        for (auto member: parent_members) data_members.push_back(member);
+        for (auto member: parent_members) all_data_members.push_back(member);
     }
 
-    return data_members;
+    auto data_members = std::meta::nonstatic_data_members_of(
+        ^^T, 
+        std::meta::access_context::unchecked()
+    );
+    for (auto member: data_members) all_data_members.push_back(member);
+
+    return all_data_members;
 }
 
 template<typename T>
