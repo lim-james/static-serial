@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <array>
 #include <bit>
+#include <limits>
 #include <span>
 #include <tuple>
 #include <type_traits>
@@ -318,6 +319,8 @@ constexpr std::span<const std::byte> deserialize(
 
 template<std::uint8_t depth>
 constexpr std::string_view pad() {
+    static_assert(depth <= 127, "Schema nesting depth exceeds maximum supported depth");
+
     if constexpr (depth == 0) {
         using namespace std::literals;
         return ""sv;
