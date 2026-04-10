@@ -189,5 +189,4 @@ static_assert(members.size() == 0); // will pass
 
 ## Known issues
 
-1. std::tuple ~and std::pair~ support
-2. ~private data members are not picked up~
+> All resolved

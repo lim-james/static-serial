@@ -1,6 +1,7 @@
 #pragma once
 
 #include "static_serial.hpp"
+#include <type_traits>
 
 namespace stse::test {
 
@@ -31,11 +32,27 @@ constexpr bool test_round_trip() {
         && test_round_trip_inplace<data>();
 }
 
-bool test_round_trip(auto data) {
-    using T = decltype(data);
+bool test_round_trip_heap(const auto& data) {
+    using T = std::remove_cvref_t<decltype(data)>;
     auto bytes = stse::serialize(data);
-    auto [restored, _] = stse::deserialize<T>(bytes);
+    auto restored = stse::deserialize<T>(bytes).object;
     return data == restored;
+}
+
+bool test_round_trip_inplace(const auto& data) {
+    using T = std::remove_cvref_t<decltype(data)>;
+
+    auto raw_bytes = std::array<std::byte, stse::serial_size_v<T>>{};
+    auto restored = T{};
+
+    stse::serialize_advance(data, raw_bytes);
+    stse::deserialize_advance(restored, raw_bytes);
+    return data == restored;
+}
+
+bool test_round_trip(const auto& data) {
+    return test_round_trip_heap(data);
+        // && test_round_trip_inplace(data);
 }
 
 template<auto data, typename Endian> 
