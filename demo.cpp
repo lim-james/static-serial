@@ -2,7 +2,6 @@
 #include <array>
 #include <print>
 
-#include "include/static_serial.hpp"
 #include "static_serial.hpp"
 
 struct Price {
