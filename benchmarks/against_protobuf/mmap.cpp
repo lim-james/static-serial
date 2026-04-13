@@ -68,7 +68,7 @@ int main() {
         auto buffer = std::span<std::byte>(static_cast<std::byte*>(addr()), BUFFER_SIZE);
 
         const auto start_timer = std::chrono::steady_clock::now();
-        for (const auto& entry: entries) buffer = stse::serialize_into(entry, buffer);
+        for (const auto& entry: entries) buffer = stse::serialize_advance(entry, buffer);
         const auto end_timer = std::chrono::steady_clock::now();
 
         const auto duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end_timer - start_timer);
@@ -83,8 +83,8 @@ int main() {
 
         const auto start_timer = std::chrono::steady_clock::now();
         for (const auto& entry: entries) {
-            auto [restored, offset_buffer] = stse::deserialize<entry_t>(buffer);
-            buffer = offset_buffer;
+            auto [restored, remaining_buffer] = stse::deserialize<entry_t>(buffer);
+            buffer = remaining_buffer;
             assert(entry == restored);
         }
         const auto end_timer = std::chrono::steady_clock::now();
