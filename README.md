@@ -30,8 +30,10 @@ assert(stse::serial_size_v<OrderBookLevel> != sizeof(OrderBookLevel));
 
 > Incomplete segment: to include supported compilers
 
-1. Add `include/static_serial.hpp` into your project. (No support for modules yet)
+1. Add [`include/static_serial.hpp`](https://github.com/lim-james/static-serial/blob/main/include/static_serial.hpp) into your project. (No support for modules yet)
 2. Done.
+
+Refer to this [Compiler Explorer example](https://godbolt.org/z/xsP3hxbon) for an example use case.
 
 ## Public Interface
 
