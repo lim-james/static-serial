@@ -6,6 +6,8 @@ Zero-overhead binary serialization w/ C++26 Reflection support
 
 ## Example
 
+[Run on Compiler Explorer!!](https://godbolt.org/z/xsP3hxbon)
+
 ```cpp
 #include "static_serial.hpp"
 
@@ -32,8 +34,6 @@ assert(stse::serial_size_v<OrderBookLevel> != sizeof(OrderBookLevel));
 
 1. Add [`include/static_serial.hpp`](https://github.com/lim-james/static-serial/blob/main/include/static_serial.hpp) into your project. (No support for modules yet)
 2. Done.
-
-Refer to this [Compiler Explorer example](https://godbolt.org/z/xsP3hxbon) for an example use case.
 
 ## Public Interface
 
