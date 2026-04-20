@@ -30,7 +30,11 @@ assert(stse::serial_size_v<OrderBookLevel> != sizeof(OrderBookLevel));
 
 ## Getting Started
 
-> Incomplete segment: to include supported compilers
+Tested on GCC16 with the following flags `-std=c++26 -freflection -fcontracts`
+```zsh
+# on ubuntu
+sudo apt install gcc-16 g++-16
+```
 
 1. Add [`include/static_serial.hpp`](https://github.com/lim-james/static-serial/blob/main/include/static_serial.hpp) into your project. (No support for modules yet)
 2. Done.
@@ -156,6 +160,7 @@ But I was primarily inspired by [Barry Revzin's Practical Reflection at CppCon25
    accomodates for padded bytes whilst meta::size_of is raw number of bytes
 7. `std::meta::annotations_of` for option to omit a field from serialization
 8. `std::meta::bases_of` fetch parent classes to recursively get member
+9. `contracts` included precondition for buffer size checks 
 
 ## Difficulties faced
 

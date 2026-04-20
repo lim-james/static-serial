@@ -9,7 +9,6 @@
 #include <span>
 #include <tuple>
 #include <type_traits>
-#include <cassert>
 #include <string>
 #include <format>
 #include <ranges>
@@ -464,10 +463,10 @@ template<typename T, detail::EndianType Endian = detail::NativeEndian>
 [[nodiscard]] constexpr auto deserialize(
     std::span<const std::byte> data, 
     Endian endianness = {}
-) -> DeserializeResult<T> {
+) -> DeserializeResult<T> 
+    pre(data.size() >= serial_size_v<T>)
+{
     if constexpr (is_serializable_v<T>) {
-        assert(data.size() >= serial_size_v<T>);
-
         auto parsed = T{};
         auto remaining_ptr = detail::deserialize(parsed, data, endianness);
         return DeserializeResult{
@@ -484,9 +483,10 @@ constexpr auto deserialize_advance(
     T& parsed,
     std::span<const std::byte> data, 
     Endian endianness = {}
-) -> std::span<const std::byte> {
+) -> std::span<const std::byte> 
+    pre(data.size() >= serial_size_v<T>)
+{
     if constexpr (is_serializable_v<T>) {
-        assert(data.size() >= serial_size_v<T>);
         return detail::deserialize(parsed, data, endianness);
     } else {
         static_assert(is_serializable_v<T>, "Type not deserializable.");
