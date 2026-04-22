@@ -30,14 +30,16 @@ assert(stse::serial_size_v<OrderBookLevel> != sizeof(OrderBookLevel));
 
 ## Getting Started
 
-Tested on GCC16 with the following flags `-std=c++26 -freflection -fcontracts`
+### Install GCC16
 ```zsh
 # on ubuntu
 sudo apt install gcc-16 g++-16
 ```
 
+### Project Setup
+
 1. Add [`include/static_serial.hpp`](https://github.com/lim-james/static-serial/blob/main/include/static_serial.hpp) into your project. (No support for modules yet)
-2. Done.
+2. Compile with following flags `-std=c++26 -freflection -fcontracts`
 
 ## Public Interface
 
