@@ -2,7 +2,7 @@
 
 `C++26` `Reflections` `GCC16`
 
-Zero-overhead binary serialization w/ C++26 Reflection support
+Reflection-based binary serializer for fixed-size wire formats.
 
 ## Example
 
