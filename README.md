@@ -30,20 +30,37 @@ assert(stse::serial_size_v<OrderBookLevel> != sizeof(OrderBookLevel));
 
 ## Getting Started
 
-### Install GCC16
-```zsh
-# on ubuntu
+### Requirements
+- GCC 16 (`g++-16`) — required for C++26 reflection and contracts support
+- CMake 3.25+
+
+```bash
+# Ubuntu
 sudo apt install gcc-16 g++-16
 ```
 
-### Project Setup
+### Integration
+Add [`include/static_serial.hpp`](https://github.com/lim-james/static-serial/blob/main/include/static_serial.hpp) to your project. No module support yet.
 
-1. Add [`include/static_serial.hpp`](https://github.com/lim-james/static-serial/blob/main/include/static_serial.hpp) into your project. (No support for modules yet)
-2. Compile with following flags `-std=c++26 -freflection -fcontracts`
-  - consider `-fcontract-evaluation-semantic` level, constexpr api is not
-compatible with C++26's contracts (indicated under known issues)
+### Compile Flags
+| Flag | Purpose |
+|------|---------|
+| `-std=c++26` | Required |
+| `-freflection` | P2996 static reflection |
+| `-fcontracts` | Contract annotations |
+| `-fcontract-evaluation-semantic=observe` | Recommended — logs violations without requiring a custom handler. See [Known Issues](#known-issues). |
 
+### Build with CMake
+```bash
+cmake -S . -B build -DCMAKE_CXX_COMPILER=/usr/bin/g++-16
+cmake --build build
+```
 
+### Build manually
+```bash
+g++-16 -std=c++26 -freflection -fcontracts -fcontract-evaluation-semantic=observe \
+    -I path/to/include your_file.cpp -o your_file.out
+```
 ## Public Interface
 
 **Serialization Methods**
