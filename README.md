@@ -40,6 +40,9 @@ sudo apt install gcc-16 g++-16
 
 1. Add [`include/static_serial.hpp`](https://github.com/lim-james/static-serial/blob/main/include/static_serial.hpp) into your project. (No support for modules yet)
 2. Compile with following flags `-std=c++26 -freflection -fcontracts`
+  - consider `-fcontract-evaluation-semantic` level, constexpr api is not
+compatible with C++26's contracts (indicated under known issues)
+
 
 ## Public Interface
 
@@ -191,4 +194,6 @@ overloads to cut build times by using `if constexpr`
 
 ## Known issues
 
-> All resolved
+1. [ICE] varialble template disallowed in contract postcondition (submitted bug
+   report for GCC16)
+2. constexpr public api has compatibility issues with C++26 Contracts
