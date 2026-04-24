@@ -196,4 +196,5 @@ overloads to cut build times by using `if constexpr`
 
 1. [ICE] varialble template disallowed in contract postcondition (submitted bug
    report for GCC16)
-2. constexpr public api has compatibility issues with C++26 Contracts
+2. `constexpr` public API is incompatible with C++26 Contracts — contract conditions 
+   cannot be constant-evaluated; documented under compile flags as a known limitation
