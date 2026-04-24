@@ -1,6 +1,7 @@
 #include <cstdint>
 #include <array>
 #include <print>
+#include <cassert>
 
 #include "static_serial.hpp"
 
