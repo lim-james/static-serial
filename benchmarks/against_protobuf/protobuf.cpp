@@ -1,6 +1,4 @@
-#include <iostream>
 #include <vector>
-#include <random>
 #include <algorithm>
 #include <filesystem>
 #include <fcntl.h>
@@ -15,39 +13,8 @@
 #include <google/protobuf/io/coded_stream.h>
 #include <google/protobuf/io/zero_copy_stream_impl_lite.h>
 
-// Native structs — now in namespace native:: to avoid collision
 #include "market_data.h"
-
-class file_guard {
-public:
-    file_guard(
-        std::filesystem::path filepath,
-        std::optional<std::size_t> filesize = std::nullopt,
-        int flags = O_RDWR | O_CREAT
-    ) {
-        fd_ = open(filepath.c_str(), flags, 0644);
-        if (filesize) ftruncate(fd_, *filesize);
-    }
-
-    ~file_guard() { if (fd_ != -1) close(fd_); }
-    int operator()() const { return fd_; }
-private:
-    int fd_ = -1;
-};
-
-class mmap_guard {
-public:
-    mmap_guard(int fd, std::size_t size) : size_(size) {
-        addr_ = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-    }
-
-    ~mmap_guard() { if (addr_ != MAP_FAILED) munmap(addr_, size_); }
-    void* operator()() const { return addr_; }
-
-private:
-    std::size_t size_;
-    void* addr_ = MAP_FAILED;
-};
+#include "common.h"
 
 // Convert native struct to proto message.
 // Both benchmarks generate from native::generate_random_snapshot so the
@@ -77,18 +44,18 @@ MarketSnapshot to_proto(const native::MarketSnapshot& src) {
 }
 
 int main() {
-    static constexpr std::size_t N               = 1'000'000;
-    static constexpr std::size_t EST_BUFFER_SIZE = N * 512;
+    static constexpr std::size_t NUMBER_OF_ENTRIES = 1'000'000;
+    static constexpr std::size_t EST_BUFFER_SIZE   = NUMBER_OF_ENTRIES * 512;
 
     // --- Data generation (outside benchmark timing) ---
     std::vector<native::MarketSnapshot> native_entries;
-    native_entries.reserve(N);
-    std::generate_n(std::back_inserter(native_entries), N, []() {
+    native_entries.reserve(NUMBER_OF_ENTRIES);
+    std::generate_n(std::back_inserter(native_entries), NUMBER_OF_ENTRIES, []() {
         return native::generate_random_snapshot("AAPL");
     });
 
     std::vector<MarketSnapshot> proto_entries;
-    proto_entries.reserve(N);
+    proto_entries.reserve(NUMBER_OF_ENTRIES);
     for (const auto& s : native_entries)
         proto_entries.push_back(to_proto(s));
 
@@ -102,7 +69,7 @@ int main() {
 
         const auto start_timer = std::chrono::steady_clock::now();
         for (const auto& msg : proto_entries) {
-            coded_stream.WriteVarint32(msg.ByteSizeLong());
+            coded_stream.WriteVarint32(static_cast<std::uint32_t>(msg.ByteSizeLong()));
             msg.SerializeToCodedStream(&coded_stream);
         }
 
@@ -120,7 +87,7 @@ int main() {
         google::protobuf::io::CodedInputStream  coded_stream(&array_stream);
 
         const auto start_timer = std::chrono::steady_clock::now();
-        for (std::size_t i = 0; i < N; ++i) {
+        for (std::size_t i = 0; i < NUMBER_OF_ENTRIES; ++i) {
             uint32_t size;
             if (!coded_stream.ReadVarint32(&size)) break;
 
