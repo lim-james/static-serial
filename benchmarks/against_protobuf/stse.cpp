@@ -26,7 +26,7 @@ public:
         int flags = O_RDWR | O_CREAT
     ) {
         fd_ = open(filepath.c_str(), flags, 0644);
-        if (filesize) ftruncate(fd_, filesize.value());
+        if (filesize) auto _ = ftruncate(fd_, filesize.value());
     }
 
     ~file_guard() { if (fd_ != -1) close(fd_); }
