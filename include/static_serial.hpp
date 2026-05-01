@@ -208,9 +208,8 @@ constexpr std::span<std::byte> serialize_static_container(
     const T& source,
     Endian endianness
 ) {
-    [&]<std::size_t... Is>(std::index_sequence<Is...>) {
-        ((destination = serialize(destination, source[Is], endianness)), ...);
-    }(std::make_index_sequence<std::tuple_size_v<T>>{});
+    auto& [...items] = source;
+    ((destination = serialize(destination, items, endianness)), ...);
     return destination;
 }
 
@@ -284,9 +283,8 @@ constexpr std::span<const std::byte> deserialize_static_container(
     std::span<const std::byte> source,
     Endian endianness
 ) {
-    [&]<std::size_t... Is>(std::index_sequence<Is...>) {
-        ((source = deserialize(destination[Is], source, endianness)), ...);
-    }(std::make_index_sequence<std::tuple_size_v<T>>{});
+    auto& [...items] = destination;
+    ((source = deserialize(items, source, endianness)), ...);
     return source;
 }
 
