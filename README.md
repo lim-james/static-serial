@@ -182,7 +182,8 @@ But I was primarily inspired by [Barry Revzin's Practical Reflection at CppCon25
    accomodates for padded bytes whilst meta::size_of is raw number of bytes
 7. `std::meta::annotations_of` for option to omit a field from serialization
 8. `std::meta::bases_of` fetch parent classes to recursively get member
-9. `contracts` included precondition for buffer size checks 
+9. `contracts` included precondition for buffer size checks
+10. `structured binding pack` for static container operations
 
 ## Difficulties faced
 
