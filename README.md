@@ -6,7 +6,7 @@ Reflection-based binary serializer for fixed-size wire formats.
 
 ## Example
 
-[Run on Compiler Explorer!!](https://godbolt.org/z/xsP3hxbon)
+[Run on Compiler Explorer!!](https://godbolt.org/z/T5asdjfvj)
 
 ```cpp
 #include "static_serial.hpp"
