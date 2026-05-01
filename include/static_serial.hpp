@@ -118,18 +118,23 @@ template<typename T>
 constexpr auto get_all_data_members_of() {
     auto all_data_members = std::vector<std::meta::info>{};
 
-    template for (constexpr auto base: std::define_static_array(
+    static constexpr auto bases = std::define_static_array(
         std::meta::bases_of(^^T, std::meta::access_context::unchecked())
-    )) {
+    );
+
+    template for (constexpr auto base: bases) {
         auto parent_members = get_all_data_members_of<typename[:std::meta::type_of(base):]>();
         for (auto member: parent_members) all_data_members.push_back(member);
     }
 
-    auto data_members = std::meta::nonstatic_data_members_of(
-        ^^T, 
-        std::meta::access_context::unchecked()
+    static constexpr auto data_members = std::define_static_array(
+        std::meta::nonstatic_data_members_of(
+            ^^T, 
+            std::meta::access_context::unchecked()
+        )
     );
-    for (auto member: data_members) all_data_members.push_back(member);
+
+    template for (constexpr auto member: data_members) all_data_members.push_back(member);
 
     return all_data_members;
 }
