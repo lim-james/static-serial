@@ -216,6 +216,12 @@ overloads to cut build times by using `if constexpr`
    report for GCC16)
 2. `constexpr` public API is incompatible with C++26 Contracts — contract conditions 
    cannot be constant-evaluated; documented under compile flags as a known limitation
+3. **bit fields** the api now struggles with serializing bit fields, meta
+   provides some useful methods such as is_bit_field or bit_size_of which I
+   attempted to use. however, attempts at supporting this revealed that I will
+   need to rework my current serializer to offer more fine-grained packing at bit
+   level rather than the current byte level packing. there are plans of
+supporting this in a future version as bitfields do show up in binary formats.
 
 ## License
 MIT © James Lim
