@@ -176,9 +176,9 @@ A rule-of-thumb is serializable objects should have no heap owning members/point
 | --- | --- |
 | Scalar types | Pointers (& std::nullptr_t) |
 | std::array with trivially copyable types | std::vector (any dynamically sized container) |
-| std::pair with trivially copyable types | std::tuple |
-| Aggregated structs | std::string |
-| Nested structs | |
+| Aggregated structs | std::tuple |
+| Nested structs  | std::string | 
+| Inheritted structs (non-virtual) | std::pair |
 
 
 ## Zero-overhead Verification
