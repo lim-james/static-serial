@@ -1,11 +1,5 @@
 #include "static_serial_test.hpp"
 
-#include <utility>
-
-static constexpr std::pair std_pair{1, 2};
-static_assert(stse::is_serializable_v<std::pair<int, int>>);
-static_assert(stse::test::test_round_trip<std_pair>(), "Round trip failed for std::pair");
-
 struct Vec3 {
     float x, y, z;
     bool operator==(const Vec3&) const = default;
@@ -13,6 +7,7 @@ struct Vec3 {
 
 static constexpr Vec3 position{.x = 0.1f, .y = 0.2f, .z = 0.3f};
 
+static_assert(std::is_trivially_copyable_v<Vec3>);
 static_assert(stse::is_serializable_v<Vec3>);
 static_assert(stse::test::test_round_trip<position>(), "Round trip failed for Aggregate Types");
 
@@ -34,6 +29,7 @@ static constexpr Player player{
     .inventory = {1, 2, 3, 4}
 };
 
+static_assert(std::is_trivially_copyable_v<Player>);
 static_assert(stse::is_serializable_v<Player>);
 static_assert(stse::test::test_round_trip<player>(), "Round trip failed for Nested Types");
 
@@ -52,6 +48,8 @@ struct Derived: Base {
 
 static constexpr Derived derived{{1}, 2};
 
+static_assert(std::is_trivially_copyable_v<Base>);
+static_assert(std::is_trivially_copyable_v<Derived>);
 static_assert(stse::is_serializable_v<Base>);
 static_assert(stse::is_serializable_v<Derived>);
 static_assert(stse::test::test_round_trip<derived>(), "Round trip failed for Derived Type");

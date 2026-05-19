@@ -44,7 +44,8 @@ using uint_of_size_t = typename uint_of_size<sizeof(T)>::type;
 template<typename T>
 concept NotSerializable = std::is_pointer_v<T> 
                        || std::is_null_pointer_v<T> 
-                       || std::is_polymorphic_v<T>;
+                       || std::is_polymorphic_v<T>
+                       || !std::is_trivially_copyable_v<T>;
 
 template<typename T>
 concept Scalar = std::is_scalar_v<T>;

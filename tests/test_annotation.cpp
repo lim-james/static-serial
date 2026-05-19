@@ -6,6 +6,7 @@ struct PartialSerializable {
     bool operator==(const PartialSerializable&) const = default;
 };
 
+static_assert(std::is_trivially_copyable_v<PartialSerializable>);
 static_assert(stse::is_serializable_v<PartialSerializable>);
 
 static constexpr PartialSerializable ps{1, nullptr};
