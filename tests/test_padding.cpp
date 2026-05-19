@@ -16,4 +16,6 @@ static constexpr auto bytes = stse::serialize(padded);
 static_assert(bytes.size() != sizeof(PaddedStruct));
 static_assert(bytes.size() == COMPACT_SIZE);
 static_assert(bytes.size() == stse::serial_size_v<PaddedStruct>);
-static_assert(stse::deserialize<PaddedStruct>(bytes).object == padded);
+
+static constexpr auto [parsed_object] = stse::deserialize<PaddedStruct>(bytes).objects;
+static_assert(parsed_object == padded);

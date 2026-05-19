@@ -94,19 +94,39 @@ constexpr auto serialize_advance(
 ) -> std::span<std::byte>;
 ```
 
+**`deserialize`** - deserializes one or more objects from a byte span, returning
+results and remaining span.
 ```cpp
-template<typename T, EndianType Endian = NativeEndian>
 [[nodiscard]] constexpr auto deserialize(
-    std::span<const std::byte> data, 
-    Endian endianness = {}
-) -> DeserializeResult<T>;
+    Endian endianness,
+    const std::span<const std::byte> data
+) -> DeserializeResult<Args...> 
+    pre(data.size() >= (serial_size_v<Args> + ...));
 
-template<typename T, EndianType Endian = NativeEndian>
+template<detail::Serializable... Args>
+[[nodiscard]] constexpr auto deserialize(
+    const std::span<const std::byte> data
+) -> DeserializeResult<Args...> 
+    pre(data.size() >= (serial_size_v<Args> + ...));
+```
+
+**`deserialize_advance`** — deserializes into existing objects, returning 
+remaining span.
+```cpp
+template<detail::Serializable... Args, detail::EndianType Endian>
 constexpr auto deserialize_advance(
-    T& parsed,
-    std::span<const std::byte> data, 
-    Endian endianness = {}
-) -> std::span<const std::byte>;
+    Endian endianness,
+    const std::span<const std::byte> data, 
+    Args&... parsed
+) -> std::span<const std::byte> 
+    pre(data.size() >= (serial_size_v<Args> + ...))
+
+template<detail::Serializable... Args>
+constexpr auto deserialize_advance(
+    const std::span<const std::byte> data, 
+    Args&... parsed
+) -> std::span<const std::byte> 
+    pre(data.size() >= (serial_size_v<Args> + ...))
 ```
 
 **Skip Member Annotation**

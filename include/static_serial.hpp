@@ -430,21 +430,17 @@ template<typename T>
     }   
 }
 
+
 template<detail::EndianType Endian, detail::Serializable... Args> 
 [[nodiscard]] constexpr auto serialize(
     Endian endianness,
     const Args&... data
 ) -> std::array<std::byte, (serial_size_v<Args> + ...)> {
-    static constexpr bool serializable = (is_serializable_v<Args> && ...);
-    if constexpr (serializable) {
-        static constexpr std::size_t buffer_size = (serial_size_v<Args> + ...);
-        auto buffer = std::array<std::byte, buffer_size>{};
-        std::span<std::byte> buffer_ptr = buffer;
-        ((buffer_ptr = detail::serialize(buffer_ptr, data, endianness)), ...);
-        return buffer;
-    } else {
-        static_assert(serializable, "Type not serializable.");
-    }
+    static constexpr std::size_t buffer_size = (serial_size_v<Args> + ...);
+    auto buffer = std::array<std::byte, buffer_size>{};
+
+    std::span<std::byte> write_ptr = buffer;
+    return ((write_ptr = detail::serialize(write_ptr, data, endianness)), ...);
 }
 
 template<detail::Serializable... Args> 
@@ -464,11 +460,9 @@ constexpr auto serialize_advance(
     pre(destination.size() >= (serial_size_v<Args> + ...))
     // post(out: out.size() >= destination.size() - serial_size_v<T>)
 {
-    auto destination_ptr = destination;
-    ((destination_ptr = detail::serialize(destination_ptr, data, endianness)), ...);
-    return destination_ptr;
+    auto write_ptr = destination;
+    return ((write_ptr = detail::serialize(write_ptr, data, endianness)), ...);
 }
-
 
 template<detail::Serializable... Args> 
 constexpr auto serialize_advance(
@@ -482,48 +476,67 @@ constexpr auto serialize_advance(
 }
 
 
-
-template<typename T>
+template<detail::Serializable... Args>
 struct DeserializeResult {
-    T object;
+    std::tuple<Args...> objects;
     std::span<const std::byte> remaining;
 };
 
-template<typename T, detail::EndianType Endian = detail::NativeEndian>
+template<detail::Serializable... Args, detail::EndianType Endian>
 [[nodiscard]] constexpr auto deserialize(
-    const std::span<const std::byte> data, 
-    Endian endianness = {}
-) -> DeserializeResult<T> 
-    pre(data.size() >= serial_size_v<T>)
+    Endian endianness,
+    const std::span<const std::byte> data
+) -> DeserializeResult<Args...> 
+    pre(data.size() >= (serial_size_v<Args> + ...))
     // post(out: out.remaining.size() >= data.size() - serial_size_v<T>)
 {
-    if constexpr (is_serializable_v<T>) {
-        auto parsed = T{};
-        auto remaining_ptr = detail::deserialize(parsed, data, endianness);
-        return DeserializeResult{
-            .object    = parsed, 
-            .remaining = remaining_ptr
-        };
-    } else {
-        static_assert(is_serializable_v<T>, "Type not deserializable.");
-    }
+    std::tuple<Args...> parsed_objects{};
+    auto& [...parsed] = parsed_objects;
+    
+    auto remaining_ptr = data;
+    ((remaining_ptr = detail::deserialize(parsed, remaining_ptr, endianness)), ...);
+
+    return DeserializeResult{
+        .objects   = parsed_objects, 
+        .remaining = remaining_ptr
+    };
 }
 
-template<typename T, detail::EndianType Endian = detail::NativeEndian>
+template<detail::Serializable... Args>
+[[nodiscard]] constexpr auto deserialize(
+    const std::span<const std::byte> data
+) -> DeserializeResult<Args...> 
+    pre(data.size() >= (serial_size_v<Args> + ...))
+    // post(out: out.remaining.size() >= data.size() - serial_size_v<T>)
+{
+    return deserialize<Args...>(detail::NativeEndian{}, data);
+}
+
+
+template<detail::Serializable... Args, detail::EndianType Endian>
 constexpr auto deserialize_advance(
-    T& parsed,
+    Endian endianness,
     const std::span<const std::byte> data, 
-    Endian endianness = {}
+    Args&... parsed
 ) -> std::span<const std::byte> 
-    pre(data.size() >= serial_size_v<T>)
+    pre(data.size() >= (serial_size_v<Args> + ...))
     // post(out: out.size() >= data.size() - serial_size_v<T>)
 {
-    if constexpr (is_serializable_v<T>) {
-        return detail::deserialize(parsed, data, endianness);
-    } else {
-        static_assert(is_serializable_v<T>, "Type not deserializable.");
-    }
+    auto read_ptr = data;
+    return ((read_ptr = detail::deserialize(parsed, read_ptr, endianness)), ...);
 }
+
+template<detail::Serializable... Args>
+constexpr auto deserialize_advance(
+    const std::span<const std::byte> data, 
+    Args&... parsed
+) -> std::span<const std::byte> 
+    pre(data.size() >= (serial_size_v<Args> + ...))
+    // post(out: out.size() >= data.size() - serial_size_v<T>)
+{
+    return deserialize_advance(detail::NativeEndian{}, data, parsed...);
+}
+
 
 template<typename T>
 [[nodiscard]] std::string schema() {

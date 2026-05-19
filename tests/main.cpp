@@ -26,8 +26,7 @@ int main() {
 
     A a_parsed;
     B b_parsed;
-    buffer_ptr = stse::deserialize_advance(a_parsed, buffer_ptr);
-    buffer_ptr = stse::deserialize_advance(b_parsed, buffer_ptr);
+    buffer_ptr = stse::deserialize_advance(buffer_ptr, a_parsed, b_parsed);
 
     assert(a == a_parsed);
     assert(b == b_parsed);

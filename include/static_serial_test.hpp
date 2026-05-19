@@ -8,7 +8,7 @@ namespace stse::test {
 template<auto data>
 constexpr bool test_round_trip_heap() {
     auto raw_bytes = stse::serialize(data);
-    auto restored  = stse::deserialize<decltype(data)>(raw_bytes).object;
+    auto [restored]  = stse::deserialize<decltype(data)>(raw_bytes).objects;
     return data == restored;
 }
 
@@ -20,7 +20,7 @@ constexpr bool test_round_trip_inplace() {
     auto restored = T{};
 
     stse::serialize_advance(raw_bytes, data);
-    stse::deserialize_advance(restored, raw_bytes);
+    stse::deserialize_advance(raw_bytes, restored);
     return data == restored;
 }
 
@@ -35,7 +35,7 @@ constexpr bool test_round_trip() {
 bool test_round_trip_heap(const auto& data) {
     using T = std::remove_cvref_t<decltype(data)>;
     auto bytes = stse::serialize(data);
-    auto restored = stse::deserialize<T>(bytes).object;
+    auto [restored] = stse::deserialize<T>(bytes).objects;
     return data == restored;
 }
 
@@ -46,7 +46,7 @@ bool test_round_trip_inplace(const auto& data) {
     auto restored = T{};
 
     stse::serialize_advance(raw_bytes, data);
-    stse::deserialize_advance(restored, raw_bytes);
+    stse::deserialize_advance(raw_bytes, restored);
     return data == restored;
 }
 
@@ -59,7 +59,7 @@ template<auto data, typename Endian>
 consteval bool test_round_trip_endianness(Endian binary_endianness) {
     using T = decltype(data);
     auto raw_bytes = stse::serialize(binary_endianness, data);
-    auto [restored, _] = stse::deserialize<T>(raw_bytes, binary_endianness);
+    auto [restored] = stse::deserialize<T>(binary_endianness, raw_bytes).objects;
     return data == restored;
 }
 }
