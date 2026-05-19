@@ -69,12 +69,12 @@ template<detail::EndianType Endian, detail::Serializable... Args>
 [[nodiscard]] constexpr auto serialize(
     Endian endianness,
     const Args&... data
-) -> std::array<std::byte, (serial_size_v<Args> + ...)>;
+) -> std::array<std::byte, serial_size_v<Args...>>;
 
 template<detail::Serializable... Args> 
 [[nodiscard]] constexpr auto serialize(
     const Args&... data
-) -> std::array<std::byte, (serial_size_v<Args> + ...)>;
+) -> std::array<std::byte, serial_size_v<Args...>>;
 ```
 
 **`serialize_advance`** - serializes into an existing span, returning the 
@@ -101,13 +101,13 @@ results and remaining span.
     Endian endianness,
     const std::span<const std::byte> data
 ) -> DeserializeResult<Args...> 
-    pre(data.size() >= (serial_size_v<Args> + ...));
+    pre(data.size() >= serial_size_v<Args...>);
 
 template<detail::Serializable... Args>
 [[nodiscard]] constexpr auto deserialize(
     const std::span<const std::byte> data
 ) -> DeserializeResult<Args...> 
-    pre(data.size() >= (serial_size_v<Args> + ...));
+    pre(data.size() >= serial_size_v<Args...>);
 ```
 
 **`deserialize_advance`** — deserializes into existing objects, returning 
@@ -119,14 +119,14 @@ constexpr auto deserialize_advance(
     const std::span<const std::byte> data, 
     Args&... parsed
 ) -> std::span<const std::byte> 
-    pre(data.size() >= (serial_size_v<Args> + ...))
+    pre(data.size() >= serial_size_v<Args...>)
 
 template<detail::Serializable... Args>
 constexpr auto deserialize_advance(
     const std::span<const std::byte> data, 
     Args&... parsed
 ) -> std::span<const std::byte> 
-    pre(data.size() >= (serial_size_v<Args> + ...))
+    pre(data.size() >= serial_size_v<Args...>)
 ```
 
 **Skip Member Annotation**

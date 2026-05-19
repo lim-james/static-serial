@@ -405,8 +405,8 @@ template<typename T>
 template<typename T>
 inline constexpr bool is_serializable_v = is_serializable<T>();
 
-template<typename T>
-inline constexpr std::size_t serial_size_v = detail::raw_size<T>;
+template<typename... Args>
+inline constexpr std::size_t serial_size_v = (detail::raw_size<Args> + ...);
 
 template<typename T>
 [[nodiscard]] consteval bool is_serializable() {
@@ -435,18 +435,17 @@ template<detail::EndianType Endian, detail::Serializable... Args>
 [[nodiscard]] constexpr auto serialize(
     Endian endianness,
     const Args&... data
-) -> std::array<std::byte, (serial_size_v<Args> + ...)> {
-    static constexpr std::size_t buffer_size = (serial_size_v<Args> + ...);
-    auto buffer = std::array<std::byte, buffer_size>{};
-
+) -> std::array<std::byte, serial_size_v<Args...>> {
+    auto buffer = std::array<std::byte, serial_size_v<Args...>>{};
     std::span<std::byte> write_ptr = buffer;
-    return ((write_ptr = detail::serialize(write_ptr, data, endianness)), ...);
+    ((write_ptr = detail::serialize(write_ptr, data, endianness)), ...);
+    return buffer;
 }
 
 template<detail::Serializable... Args> 
 [[nodiscard]] constexpr auto serialize(
     const Args&... data
-) -> std::array<std::byte, (serial_size_v<Args> + ...)> {
+) -> std::array<std::byte, serial_size_v<Args...>> {
     return serialize(detail::NativeEndian{}, data...);
 }
 
@@ -457,7 +456,7 @@ constexpr auto serialize_advance(
     const std::span<std::byte> destination,
     const Args&... data
 ) -> std::span<std::byte> 
-    pre(destination.size() >= (serial_size_v<Args> + ...))
+    pre(destination.size() >= serial_size_v<Args...>)
     // post(out: out.size() >= destination.size() - serial_size_v<T>)
 {
     auto write_ptr = destination;
@@ -469,7 +468,7 @@ constexpr auto serialize_advance(
     const std::span<std::byte> destination,
     const Args&... data
 ) -> std::span<std::byte> 
-    pre(destination.size() >= (serial_size_v<Args> + ...))
+    pre(destination.size() >= serial_size_v<Args...>)
     // post(out: out.size() >= destination.size() - serial_size_v<T>)
 {
     return serialize_advance(detail::NativeEndian{}, destination, data...);
@@ -487,7 +486,7 @@ template<detail::Serializable... Args, detail::EndianType Endian>
     Endian endianness,
     const std::span<const std::byte> data
 ) -> DeserializeResult<Args...> 
-    pre(data.size() >= (serial_size_v<Args> + ...))
+    pre(data.size() >= serial_size_v<Args...>)
     // post(out: out.remaining.size() >= data.size() - serial_size_v<T>)
 {
     std::tuple<Args...> parsed_objects{};
@@ -506,7 +505,7 @@ template<detail::Serializable... Args>
 [[nodiscard]] constexpr auto deserialize(
     const std::span<const std::byte> data
 ) -> DeserializeResult<Args...> 
-    pre(data.size() >= (serial_size_v<Args> + ...))
+    pre(data.size() >= serial_size_v<Args...>)
     // post(out: out.remaining.size() >= data.size() - serial_size_v<T>)
 {
     return deserialize<Args...>(detail::NativeEndian{}, data);
@@ -519,7 +518,7 @@ constexpr auto deserialize_advance(
     const std::span<const std::byte> data, 
     Args&... parsed
 ) -> std::span<const std::byte> 
-    pre(data.size() >= (serial_size_v<Args> + ...))
+    pre(data.size() >= serial_size_v<Args...>)
     // post(out: out.size() >= data.size() - serial_size_v<T>)
 {
     auto read_ptr = data;
@@ -531,7 +530,7 @@ constexpr auto deserialize_advance(
     const std::span<const std::byte> data, 
     Args&... parsed
 ) -> std::span<const std::byte> 
-    pre(data.size() >= (serial_size_v<Args> + ...))
+    pre(data.size() >= serial_size_v<Args...>)
     // post(out: out.size() >= data.size() - serial_size_v<T>)
 {
     return deserialize_advance(detail::NativeEndian{}, data, parsed...);
