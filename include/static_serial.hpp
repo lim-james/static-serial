@@ -45,7 +45,8 @@ template<typename T>
 concept NotSerializable = std::is_pointer_v<T> 
                        || std::is_null_pointer_v<T> 
                        || std::is_polymorphic_v<T>
-                       || !std::is_trivially_copyable_v<T>;
+                       || !std::is_trivially_copyable_v<T>
+                       || EndianType<T>;
 
 template<typename T>
 concept Scalar = std::is_scalar_v<T>;
@@ -429,36 +430,58 @@ template<typename T>
     }   
 }
 
-
-template<typename T, detail::EndianType Endian = detail::NativeEndian> 
+template<detail::EndianType Endian, detail::Serializable... Args> 
 [[nodiscard]] constexpr auto serialize(
-    const T& data, 
-    Endian endianness = {}
-) -> std::array<std::byte, serial_size_v<T>> {
-    if constexpr (is_serializable_v<T>) {
-        auto buffer = std::array<std::byte, serial_size_v<T>>{};
-        detail::serialize(buffer, data, endianness);
+    Endian endianness,
+    const Args&... data
+) -> std::array<std::byte, (serial_size_v<Args> + ...)> {
+    static constexpr bool serializable = (is_serializable_v<Args> && ...);
+    if constexpr (serializable) {
+        static constexpr std::size_t buffer_size = (serial_size_v<Args> + ...);
+        auto buffer = std::array<std::byte, buffer_size>{};
+        std::span<std::byte> buffer_ptr = buffer;
+        ((buffer_ptr = detail::serialize(buffer_ptr, data, endianness)), ...);
         return buffer;
     } else {
-        static_assert(is_serializable_v<T>, "Type not serializable.");
+        static_assert(serializable, "Type not serializable.");
     }
 }
 
-template<typename T, detail::EndianType Endian = detail::NativeEndian> 
+template<detail::Serializable... Args> 
+[[nodiscard]] constexpr auto serialize(
+    const Args&... data
+) -> std::array<std::byte, (serial_size_v<Args> + ...)> {
+    return serialize(detail::NativeEndian{}, data...);
+}
+
+
+template<detail::EndianType Endian, detail::Serializable... Args> 
 constexpr auto serialize_advance(
-    const T& data, 
+    Endian endianness,
     const std::span<std::byte> destination,
-    Endian endianness = {}
+    const Args&... data
 ) -> std::span<std::byte> 
-    pre(destination.size() >= serial_size_v<T>)
+    pre(destination.size() >= (serial_size_v<Args> + ...))
     // post(out: out.size() >= destination.size() - serial_size_v<T>)
 {
-    if constexpr (is_serializable_v<T>) {
-        return detail::serialize(destination, data, endianness);
-    } else {
-        static_assert(is_serializable_v<T>, "Type not serializable.");
-    }
+    auto destination_ptr = destination;
+    ((destination_ptr = detail::serialize(destination_ptr, data, endianness)), ...);
+    return destination_ptr;
 }
+
+
+template<detail::Serializable... Args> 
+constexpr auto serialize_advance(
+    const std::span<std::byte> destination,
+    const Args&... data
+) -> std::span<std::byte> 
+    pre(destination.size() >= (serial_size_v<Args> + ...))
+    // post(out: out.size() >= destination.size() - serial_size_v<T>)
+{
+    return serialize_advance(detail::NativeEndian{}, destination, data...);
+}
+
+
 
 template<typename T>
 struct DeserializeResult {
@@ -478,7 +501,7 @@ template<typename T, detail::EndianType Endian = detail::NativeEndian>
         auto parsed = T{};
         auto remaining_ptr = detail::deserialize(parsed, data, endianness);
         return DeserializeResult{
-            .object = parsed, 
+            .object    = parsed, 
             .remaining = remaining_ptr
         };
     } else {

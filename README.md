@@ -63,21 +63,38 @@ g++-16 -std=c++26 -freflection -fcontracts -fcontract-evaluation-semantic=observ
 ```
 ## Public Interface
 
-**Serialization Methods**
+**`serialize`** - serializes one or more objects into a stack-allocated byte array
 ```cpp
-template<typename T, EndianType Endian = NativeEndian> 
+template<detail::EndianType Endian, detail::Serializable... Args> 
 [[nodiscard]] constexpr auto serialize(
-    const T& data, 
-    Endian endianness = {}
-) -> std::array<std::byte, raw_size<T>>;
+    Endian endianness,
+    const Args&... data
+) -> std::array<std::byte, (serial_size_v<Args> + ...)>;
 
-template<typename T, EndianType Endian = NativeEndian> 
+template<detail::Serializable... Args> 
+[[nodiscard]] constexpr auto serialize(
+    const Args&... data
+) -> std::array<std::byte, (serial_size_v<Args> + ...)>;
+```
+
+**`serialize_advance`** - serializes into an existing span, returning the 
+remaining span after the written bytes.
+```cpp
+template<detail::EndianType Endian, detail::Serializable... Args> 
 constexpr auto serialize_advance(
-    const T& data, 
-    std::span<std::byte> destination,
-    Endian endianness = {}
+    Endian endianness,
+    const std::span<std::byte> destination,
+    const Args&... data
 ) -> std::span<std::byte>;
 
+template<detail::Serializable... Args> 
+constexpr auto serialize_advance(
+    const std::span<std::byte> destination,
+    const Args&... data
+) -> std::span<std::byte>;
+```
+
+```cpp
 template<typename T, EndianType Endian = NativeEndian>
 [[nodiscard]] constexpr auto deserialize(
     std::span<const std::byte> data, 

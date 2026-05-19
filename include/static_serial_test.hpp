@@ -19,7 +19,7 @@ constexpr bool test_round_trip_inplace() {
     auto raw_bytes = std::array<std::byte, stse::serial_size_v<T>>{};
     auto restored = T{};
 
-    stse::serialize_advance(data, raw_bytes);
+    stse::serialize_advance(raw_bytes, data);
     stse::deserialize_advance(restored, raw_bytes);
     return data == restored;
 }
@@ -45,7 +45,7 @@ bool test_round_trip_inplace(const auto& data) {
     auto raw_bytes = std::array<std::byte, stse::serial_size_v<T>>{};
     auto restored = T{};
 
-    stse::serialize_advance(data, raw_bytes);
+    stse::serialize_advance(raw_bytes, data);
     stse::deserialize_advance(restored, raw_bytes);
     return data == restored;
 }
@@ -58,7 +58,7 @@ bool test_round_trip(const auto& data) {
 template<auto data, typename Endian> 
 consteval bool test_round_trip_endianness(Endian binary_endianness) {
     using T = decltype(data);
-    auto raw_bytes = stse::serialize(data, binary_endianness);
+    auto raw_bytes = stse::serialize(binary_endianness, data);
     auto [restored, _] = stse::deserialize<T>(raw_bytes, binary_endianness);
     return data == restored;
 }
