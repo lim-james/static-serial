@@ -20,6 +20,7 @@ Testing/
 # Binaries
 *.out
 *.exe
+*.bin
 
 # CLion
 .idea/
