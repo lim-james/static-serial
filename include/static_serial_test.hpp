@@ -58,8 +58,35 @@ bool test_round_trip(const auto& data) {
 template<auto data, typename Endian> 
 consteval bool test_round_trip_endianness(Endian binary_endianness) {
     using T = decltype(data);
-    auto raw_bytes = stse::serialize(binary_endianness, data);
+    auto raw_bytes  = stse::serialize(binary_endianness, data);
     auto [restored] = stse::deserialize<T>(binary_endianness, raw_bytes).objects;
     return data == restored;
 }
+
+template<auto... data>
+consteval bool test_variadic_round_trip() {
+    auto raw_bytes = stse::serialize(data...);
+    auto result    = stse::deserialize<decltype(data)...>(raw_bytes);
+    auto& [...restored] = result.objects;
+    return ((data == restored) && ...);
+}
+
+template<auto... data>
+consteval bool test_variadic_advance_round_trip() {
+    auto raw_bytes = stse::serialize(data...);
+
+    std::tuple<decltype(data)...> parsed{};
+    auto& [...restored] = parsed;
+    stse::deserialize_advance(std::span<const std::byte>{raw_bytes}, restored...);
+    return ((data == restored) && ...);
+}
+
+template<auto endianness, auto... data>
+consteval bool test_variadic_round_trip_endian() {
+    auto raw_bytes = stse::serialize(endianness, data...);
+    auto result    = stse::deserialize<decltype(data)...>(endianness, raw_bytes);
+    auto& [...restored] = result.objects;
+    return ((data == restored) && ...);
+}
+
 }
