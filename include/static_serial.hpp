@@ -117,7 +117,7 @@ consteval bool has_annotation(std::meta::info info) {
 }
 
 template<typename T>
-constexpr auto get_all_data_members_of() {
+consteval auto get_all_data_members_of() {
     auto all_data_members = std::vector<std::meta::info>{};
 
     static constexpr auto bases = std::define_static_array(
@@ -217,7 +217,7 @@ constexpr std::span<std::byte> serialize_static_container(
 
 template<Aggregate T, EndianType Endian>
 constexpr std::span<std::byte> serialize_aggregate(
-    std::span<std::byte> destination, 
+    std::span<std::byte> destination,
     const T& source,
     Endian endianness
 ) {
