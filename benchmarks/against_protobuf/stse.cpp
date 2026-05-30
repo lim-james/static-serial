@@ -17,7 +17,7 @@
 int main() {
     using entry_t = native::MarketSnapshot;
 
-    static constexpr std::size_t ENTRY_SIZE = sizeof(entry_t);
+    static constexpr std::size_t ENTRY_SIZE = stse::serial_size_v<entry_t>;
     static constexpr std::size_t BUFFER_SIZE = NUMBER_OF_ENTRIES * ENTRY_SIZE;
 
     std::vector<entry_t> entries;
@@ -27,12 +27,12 @@ int main() {
     });
 
     {
-        auto file = file_guard("market_data.bin", BUFFER_SIZE);
+        auto file = file_guard("stse_market_data.bin", BUFFER_SIZE);
         auto addr = mmap_guard(file(), BUFFER_SIZE);
         auto buffer = std::span<std::byte>(static_cast<std::byte*>(addr()), BUFFER_SIZE);
 
         const auto start_timer = std::chrono::steady_clock::now();
-        for (const auto& entry: entries) buffer = stse::serialize_advance(entry, buffer);
+        for (const auto& entry: entries) buffer = stse::serialize_advance(buffer, entry);
         const auto end_timer = std::chrono::steady_clock::now();
 
         const auto duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end_timer - start_timer);
@@ -41,14 +41,14 @@ int main() {
 
     {
 
-        auto file = file_guard("market_data.bin", BUFFER_SIZE);
+        auto file = file_guard("stse_market_data.bin", BUFFER_SIZE);
         auto addr = mmap_guard(file(), BUFFER_SIZE);
         auto buffer = std::span<const std::byte>(static_cast<std::byte*>(addr()), BUFFER_SIZE);
 
         const auto start_timer = std::chrono::steady_clock::now();
+        entry_t restored;
         for (const auto& entry: entries) {
-            auto [restored, remaining_buffer] = stse::deserialize<entry_t>(buffer);
-            buffer = remaining_buffer;
+            buffer = stse::deserialize_advance<entry_t>(buffer, restored);
             assert(entry == restored);
         }
         const auto end_timer = std::chrono::steady_clock::now();

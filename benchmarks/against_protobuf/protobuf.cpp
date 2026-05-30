@@ -68,7 +68,7 @@ int main() {
         proto_entries.push_back(to_proto_arena(serialize_arena, s));
 
     {
-        file_guard file("pb_arena_data.bin", EST_BUFFER_SIZE);
+        file_guard file("protobuf_market_data.bin", EST_BUFFER_SIZE);
         mmap_guard addr(file(), EST_BUFFER_SIZE);
 
         google::protobuf::io::ArrayOutputStream array_stream(addr(), EST_BUFFER_SIZE);
@@ -83,14 +83,15 @@ int main() {
 
         std::println("Serialize: {}",
             std::chrono::duration_cast<std::chrono::milliseconds>(end_timer - start_timer));
+        std::println("Wire size: {}MB", coded_stream.ByteCount() / 1024 / 1024);
     }
 
     {
-        file_guard file("pb_arena_data.bin");
+        file_guard file("protobuf_market_data.bin");
         mmap_guard addr(file(), EST_BUFFER_SIZE);
 
         google::protobuf::io::ArrayInputStream array_stream(addr(), EST_BUFFER_SIZE);
-        google::protobuf::io::CodedInputStream  coded_stream(&array_stream);
+        google::protobuf::io::CodedInputStream coded_stream(&array_stream);
 
         google::protobuf::Arena deser_arena(make_arena_opts());
 
