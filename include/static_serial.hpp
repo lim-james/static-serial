@@ -104,6 +104,15 @@ template<Aggregate T, std::uint8_t depth> std::string generate_schema();
 template<NotSerializable T, std::uint8_t depth>
 std::string generate_schema() = delete("Type not supported for static serialization");
 
+constexpr void constexpr_memcpy(std::byte* destination, const std::byte* source, std::size_t count) {
+    if consteval {
+        for (std::size_t i = 0; i < count; ++i) {
+            destination[i] = source[i];
+        }
+    } else {
+        std::memcpy(destination, source, count);
+    }
+}
 
 template<typename Annotation>
 consteval bool has_annotation(std::meta::info info) {
@@ -193,13 +202,7 @@ constexpr std::span<std::byte> serialize_scalar(
         bytes = std::bit_cast<value_buffer_t>(std::byteswap(byte_buffer));
     }
 
-    if consteval {
-        for (std::size_t i = 0; i < value_byte_count; ++i) {
-            destination[i] = bytes[i];
-        }
-    } else {
-        std::memcpy(destination.data(), bytes.data(), value_byte_count);
-    }
+    constexpr_memcpy(destination.data(), bytes.data(), value_byte_count);
 
     return destination.subspan(value_byte_count);
 }
@@ -255,14 +258,8 @@ constexpr std::span<const std::byte> deserialize_scalar(
     using value_buffer_t = std::array<std::byte, value_byte_count>;
     value_buffer_t buffer;
 
-    auto bytes = source.first(value_byte_count);
-    if consteval {
-        for (std::size_t i = 0; i < value_byte_count; ++i) {
-            buffer[i] = bytes[i];
-        }
-    } else {
-        std::memcpy(buffer.data(), bytes.data(), value_byte_count);
-    }
+    const auto bytes = source.first(value_byte_count);
+    constexpr_memcpy(buffer.data(), bytes.data(), value_byte_count);
 
     destination = [&buffer]() {
         if constexpr (Endian::endian == NativeEndian::endian) {
@@ -320,6 +317,116 @@ constexpr std::span<const std::byte> deserialize(
     }
 }
 
+struct ByteRange { std::size_t offset, count; };
+using ByteSequence = std::vector<ByteRange>;
+
+template<Scalar T>
+consteval void enumerate_scalar(ByteSequence& sequence, std::size_t offset) {
+    sequence.emplace_back(offset, raw_size<T>);
+}
+
+template<StaticContainer T>
+consteval void enumerate_static_container(ByteSequence& sequence, std::size_t offset) {
+    using value_t = typename T::value_type;
+    [&]<std::size_t... I>(std::index_sequence<I...>) {
+        (enumerate_object<value_t>(sequence, offset + sizeof(value_t) * I), ...);
+    }(std::make_index_sequence<std::tuple_size_v<T>>{});
+}
+
+template<Aggregate T>
+consteval void enumerate_aggregate(ByteSequence& sequence, std::size_t offset) {
+    template for (constexpr auto member : serializable_members_of<T>) {
+        using member_t = typename[:std::meta::type_of(member):];
+        constexpr std::size_t internal_offset = std::meta::offset_of(member).bytes;
+        enumerate_object<member_t>(sequence, offset + internal_offset);
+    }
+}
+
+template<Serializable T> 
+consteval void enumerate_object(ByteSequence& sequence, std::size_t offset = 0) { 
+    if constexpr (Scalar<T>) {
+        enumerate_scalar<T>(sequence, offset); 
+    } else if constexpr (StaticContainer<T>) {
+        enumerate_static_container<T>(sequence, offset);
+    } else if constexpr (Aggregate<T>) {
+        enumerate_aggregate<T>(sequence, offset); 
+    } else {
+        std::unreachable();
+    }
+}
+
+consteval ByteSequence compress_layout(const ByteSequence& raw_sequence) { 
+    ByteSequence compressed_sequence{};
+    std::size_t next_offset = 0;
+
+    for (auto [offset, count]: raw_sequence) {
+        if (!compressed_sequence.empty() && offset == next_offset) {
+            compressed_sequence.back().count += count;
+        } else {
+            compressed_sequence.emplace_back(offset, count);
+        }
+        next_offset = offset + count;
+    }
+    
+    return compressed_sequence;
+}
+
+template<Serializable T> 
+consteval auto compute_byte_layout() { 
+    ByteSequence sequence{};
+    enumerate_object<T>(sequence);
+    sequence = compress_layout(sequence);
+    return std::define_static_array(sequence);
+}
+
+template<Serializable T>
+inline constexpr auto byte_layout_of = compute_byte_layout<T>();
+
+template<Serializable T>
+constexpr std::span<std::byte> serialize_flat(std::span<std::byte> destination, const T& source) {
+    const auto write_bytes = [destination](const std::byte* memory_layout) {
+        std::size_t write_offset = 0;
+        template for (constexpr auto [offset, count]: byte_layout_of<T>) {
+            constexpr_memcpy(destination.data() + write_offset, memory_layout + offset, count);
+            write_offset += count;
+        }
+    };
+
+    if consteval {
+        using value_buffer_t = std::array<const std::byte, sizeof(T)>;
+        const auto raw_bytes = std::bit_cast<value_buffer_t>(source);
+        write_bytes(raw_bytes.data());
+    } else {
+        write_bytes(reinterpret_cast<const std::byte*>(&source));
+    }
+
+    return destination.subspan(raw_size<T>);
+}
+
+template<Serializable T> 
+constexpr std::span<const std::byte> deserialize_flat(
+    T& destination, 
+    std::span<const std::byte> source
+) { 
+    const auto read_bytes = [source](std::byte* memory_layout) {
+        std::size_t read_offset = 0;
+        template for (const auto [offset, count]: byte_layout_of<T>) {
+            constexpr_memcpy(memory_layout + offset, source.data() + read_offset, count);
+            read_offset += count;
+        }
+    };
+
+    if consteval {
+        using value_buffer_t = std::array<std::byte, sizeof(T)>;
+        auto raw_bytes = value_buffer_t{}; 
+        read_bytes(raw_bytes.data());
+        destination = std::bit_cast<T>(raw_bytes);
+    } else {
+        read_bytes(reinterpret_cast<std::byte*>(&destination));
+    }
+    return source.subspan(raw_size<T>);
+}
+
 template<std::uint8_t depth>
 constexpr std::string_view pad() {
     static_assert(depth <= 127, "Schema nesting depth exceeds maximum supported depth");
@@ -335,7 +442,6 @@ constexpr std::string_view pad() {
         }();
         return {padding.data(), padding.size()};
     }
-
 }
 
 template<typename T>
@@ -430,7 +536,6 @@ template<typename T>
     }   
 }
 
-
 template<detail::EndianType Endian, detail::Serializable... Args> 
 [[nodiscard]] constexpr auto serialize(
     Endian endianness,
@@ -446,7 +551,10 @@ template<detail::Serializable... Args>
 [[nodiscard]] constexpr auto serialize(
     const Args&... data
 ) -> std::array<std::byte, serial_size_v<Args...>> {
-    return serialize(detail::NativeEndian{}, data...);
+    auto buffer = std::array<std::byte, serial_size_v<Args...>>{};
+    std::span<std::byte> write_ptr = buffer;
+    ((write_ptr = detail::serialize_flat(write_ptr, data)), ...);
+    return buffer;
 }
 
 
@@ -471,9 +579,10 @@ constexpr auto serialize_advance(
     pre(destination.size() >= serial_size_v<Args...>)
     // post(out: out.size() >= destination.size() - serial_size_v<T>)
 {
-    return serialize_advance(detail::NativeEndian{}, destination, data...);
+    auto write_ptr = destination;
+    return ((write_ptr = detail::serialize_flat(write_ptr, data)), ...);
+    // return ((write_ptr = detail::serialize(write_ptr, data, native_endian)), ...);
 }
-
 
 template<detail::Serializable... Args>
 struct DeserializeResult {
@@ -508,7 +617,16 @@ template<detail::Serializable... Args>
     pre(data.size() >= serial_size_v<Args...>)
     // post(out: out.remaining.size() >= data.size() - serial_size_v<T>)
 {
-    return deserialize<Args...>(detail::NativeEndian{}, data);
+    std::tuple<Args...> parsed_objects{};
+    auto& [...parsed] = parsed_objects;
+    
+    auto remaining_ptr = data;
+    ((remaining_ptr = detail::deserialize_flat(parsed, remaining_ptr)), ...);
+
+    return DeserializeResult{
+        .objects   = parsed_objects, 
+        .remaining = remaining_ptr
+    };
 }
 
 
@@ -533,7 +651,8 @@ constexpr auto deserialize_advance(
     pre(data.size() >= serial_size_v<Args...>)
     // post(out: out.size() >= data.size() - serial_size_v<T>)
 {
-    return deserialize_advance(detail::NativeEndian{}, data, parsed...);
+    auto read_ptr = data;
+    return ((read_ptr = detail::deserialize_flat(parsed, read_ptr)), ...);
 }
 
 
