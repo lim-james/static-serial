@@ -410,7 +410,7 @@ constexpr std::span<const std::byte> deserialize_flat(
 ) { 
     const auto read_bytes = [source](std::byte* memory_layout) {
         std::size_t read_offset = 0;
-        template for (const auto [offset, count]: byte_layout_of<T>) {
+        template for (constexpr auto [offset, count]: byte_layout_of<T>) {
             constexpr_memcpy(memory_layout + offset, source.data() + read_offset, count);
             read_offset += count;
         }
