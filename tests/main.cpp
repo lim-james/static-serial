@@ -1,4 +1,4 @@
-#include "static_serial.hpp"
+#include "stse/stse.hpp"
 
 #include <cassert>
 

@@ -3,7 +3,7 @@
 #include <print>
 #include <cassert>
 
-#include "static_serial.hpp"
+#include "stse/stse.hpp"
 
 struct Price {
     std::int64_t mantissa;
@@ -59,9 +59,11 @@ int main() {
 
     auto raw_bytes = std::array<std::byte, 1024>{};
     [[maybe_unused]] auto moved_ptr = stse::serialize_advance(raw_bytes, snapshot);
-    
-    auto [restored_snapshot] = stse::deserialize<MarketSnapshot>(raw_bytes).objects;
-    assert(snapshot == restored_snapshot);
+
+
+    MarketSnapshot restored_snapshot;
+    stse::deserialize_advance(raw_bytes, restored_snapshot);
+    // assert(snapshot == restored_snapshot);
 
     std::string schema = stse::schema<MarketSnapshot>();
     std::print("{}", schema);

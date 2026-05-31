@@ -1,4 +1,4 @@
-#include "static_serial.hpp"
+#include "stse/stse.hpp"
 
 class PrivatePointer { int* i = nullptr; };
 struct NestedPointer { PrivatePointer nested_ptr; };

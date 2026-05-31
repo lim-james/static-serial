@@ -1,6 +1,6 @@
 #pragma once
 
-#include "static_serial.hpp"
+#include "stse/stse.hpp"
 #include <type_traits>
 
 namespace stse::test {

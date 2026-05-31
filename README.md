@@ -6,10 +6,8 @@ Reflection-based binary serializer for fixed-size wire formats.
 
 ## Example
 
-[Run on Compiler Explorer!!](https://godbolt.org/z/Y7q7113bh)
-
 ```cpp
-#include "static_serial.hpp"
+#include "stse/stse.hpp"
 
 auto bid = OrderBookLevel{
     .price       = 17250, // int64  - 8B
@@ -40,9 +38,16 @@ sudo apt install gcc-16 g++-16
 ```
 
 ### Integration
-Add [`include/static_serial.hpp`](https://github.com/lim-james/static-serial/blob/main/include/static_serial.hpp) to your project. No module support yet.
+Add the [`include/stse`](https://github.com/lim-james/static-serial/blob/main/include/stse) directory to your project and include the top-level header:
+
+```cpp
+#include "stse/stse.hpp"
+```
+
+No module support yet.
 
 ### Compile Flags
+
 | Flag | Purpose |
 |------|---------|
 | `-std=c++26` | Required |
