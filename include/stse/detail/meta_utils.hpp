@@ -40,8 +40,11 @@ consteval auto get_all_data_members_of() {
 
     template for (constexpr auto member: data_members) all_data_members.push_back(member);
 
-    return all_data_members;
+    return std::define_static_array(all_data_members);
 }
+
+template<typename T>
+inline constexpr auto all_data_members_of = get_all_data_members_of<T>();
 
 template<typename T>
 consteval auto get_serializable_members_of() {
@@ -49,34 +52,10 @@ consteval auto get_serializable_members_of() {
         return !has_annotation<skipserialization>(info); 
     });
 
-    return std::define_static_array(get_all_data_members_of<T>() | skip_serialization);
+    return std::define_static_array(all_data_members_of<T> | skip_serialization);
 }
 
 template<typename T>
 inline constexpr auto serializable_members_of = get_serializable_members_of<T>();
-
-
-template<Serializable T>
-consteval std::size_t size_of();
-
-template<typename T>
-inline constexpr std::size_t raw_size = size_of<T>();
-
-template<Serializable T>
-consteval std::size_t size_of() { 
-    if constexpr (Scalar<T>) {
-        return  std::meta::size_of(^^T); 
-    } else if constexpr (StaticContainer<T>) {
-        return std::tuple_size_v<T> * raw_size<typename T::value_type>;
-    } else if constexpr (Aggregate<T>) {
-        std::size_t total = 0;
-        template for (constexpr auto member : serializable_members_of<T>) {
-            total += raw_size<typename[:std::meta::type_of(member):]>;
-        }
-        return total;
-    } else {
-        std::unreachable();
-    }
-}
 
 }
