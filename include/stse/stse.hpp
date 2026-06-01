@@ -8,8 +8,6 @@
 
 #include <cstddef>
 #include <cstring>
-#include <type_traits>
-#include <utility>
 
 #include <meta>
 
@@ -42,10 +40,7 @@ template<detail::Serializable... Args>
 [[nodiscard]] constexpr auto serialize(
     const Args&... data
 ) -> std::array<std::byte, serial_size_v<Args...>> {
-    auto buffer = std::array<std::byte, serial_size_v<Args...>>{};
-    std::span<std::byte> write_ptr = buffer;
-    ((write_ptr = detail::serialize_flat(write_ptr, data)), ...);
-    return buffer;
+    return serialize(native_endian, data...);
 }
 
 
@@ -70,9 +65,7 @@ constexpr auto serialize_advance(
     pre(destination.size() >= serial_size_v<Args...>)
     // post(out: out.size() >= destination.size() - serial_size_v<T>)
 {
-    auto write_ptr = destination;
-    return ((write_ptr = detail::serialize_flat(write_ptr, data)), ...);
-    // return ((write_ptr = detail::serialize(write_ptr, data, native_endian)), ...);
+    return serialize_advance(native_endian, destination, data...);
 }
 
 template<detail::Serializable... Args>
@@ -108,16 +101,7 @@ template<detail::Serializable... Args>
     pre(data.size() >= serial_size_v<Args...>)
     // post(out: out.remaining.size() >= data.size() - serial_size_v<T>)
 {
-    std::tuple<Args...> parsed_objects{};
-    auto& [...parsed] = parsed_objects;
-    
-    auto remaining_ptr = data;
-    ((remaining_ptr = detail::deserialize_flat(parsed, remaining_ptr)), ...);
-
-    return DeserializeResult{
-        .objects   = parsed_objects, 
-        .remaining = remaining_ptr
-    };
+    return deserialize<Args...>(native_endian, data);
 }
 
 
@@ -142,8 +126,7 @@ constexpr auto deserialize_advance(
     pre(data.size() >= serial_size_v<Args...>)
     // post(out: out.size() >= data.size() - serial_size_v<T>)
 {
-    auto read_ptr = data;
-    return ((read_ptr = detail::deserialize_flat(parsed, read_ptr)), ...);
+    return deserialize_advance<Args...>(native_endian, data, parsed...);
 }
 
 
