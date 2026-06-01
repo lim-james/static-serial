@@ -6,4 +6,4 @@ struct NotTriviallyCopyable {
 };
 
 static_assert(std::is_trivially_copyable_v<NotTriviallyCopyable> == false);
-static_assert(stse::is_serializable_v<NotTriviallyCopyable>      == false);
+static_assert(stse::Serializable<NotTriviallyCopyable>           == false);

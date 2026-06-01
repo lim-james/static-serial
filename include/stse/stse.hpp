@@ -15,42 +15,17 @@
 
 namespace stse {
 
+template<typename T>
+concept Serializable = detail::Serializable<T>;
+
 inline constexpr detail::BigEndian    big_endian{};
 inline constexpr detail::LittleEndian little_endian{};
 inline constexpr detail::NativeEndian native_endian{};
 
 inline constexpr auto skip = detail::skipserialization{};
 
-template<typename T>
-[[nodiscard]] consteval bool is_serializable();
-
-template<typename T>
-inline constexpr bool is_serializable_v = is_serializable<T>();
-
 template<typename... Args>
 inline constexpr std::size_t serial_size_v = (detail::raw_size<Args> + ...);
-
-template<typename T>
-[[nodiscard]] consteval bool is_serializable() {
-    using T_NORM = std::decay_t<T>;
-    
-    if constexpr (detail::NotSerializable<T_NORM>) {
-        return false;
-    } else if constexpr (detail::Scalar<T_NORM>) {
-        return true;
-    } else if constexpr (detail::StaticContainer<T_NORM>) {
-        return is_serializable_v<typename T_NORM::value_type>;
-    } else if constexpr (detail::Aggregate<T_NORM>) {
-        template for (constexpr auto member: detail::serializable_members_of<T_NORM>) {
-            if (!is_serializable_v<typename[:std::meta::type_of(member):]>) {
-                return false;
-            }
-        }
-        return true;
-    } else {
-        std::unreachable(); 
-    }   
-}
 
 template<detail::EndianType Endian, detail::Serializable... Args> 
 [[nodiscard]] constexpr auto serialize(
@@ -172,13 +147,9 @@ constexpr auto deserialize_advance(
 }
 
 
-template<typename T>
+template<detail::Serializable T>
 [[nodiscard]] std::string schema() {
-    if constexpr (is_serializable_v<T>) {
-        return detail::generate_schema<T, 0>();
-    } else {
-        static_assert(is_serializable_v<T>, "Type not serializable.");
-    }
+    return detail::generate_schema<T, 0>();
 }
 
 }

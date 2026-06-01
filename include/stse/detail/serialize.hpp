@@ -8,6 +8,7 @@
 
 #include <span>
 #include <cstddef>
+#include <type_traits>
 #include <utility>
 
 namespace stse::detail {
@@ -74,23 +75,6 @@ constexpr std::span<std::byte> serialize_aggregate(
     return destination;
 }
 
-template<Serializable T, EndianType Endian> 
-constexpr std::span<std::byte> serialize(
-    std::span<std::byte> destination, 
-    const T& source,
-    Endian endianness
-) { 
-    if constexpr (Scalar<T>) {
-        return serialize_scalar(destination, source, endianness); 
-    } else if constexpr (StaticContainer<T>) {
-        return serialize_static_container(destination, source, endianness); 
-    } else if constexpr (Aggregate<T>) {
-        return serialize_aggregate(destination, source, endianness); 
-    } else {
-        std::unreachable();
-    }
-}
-
 template<Serializable T>
 constexpr std::span<std::byte> serialize_flat(std::span<std::byte> destination, const T& source) {
     const auto write_bytes = [destination](const std::byte* memory_layout) {
@@ -110,6 +94,25 @@ constexpr std::span<std::byte> serialize_flat(std::span<std::byte> destination, 
     }
 
     return destination.subspan(raw_size<T>);
+}
+
+template<Serializable T, EndianType Endian> 
+constexpr std::span<std::byte> serialize(
+    std::span<std::byte> destination, 
+    const T& source,
+    Endian endianness
+) { 
+    if constexpr (Endian::endian == NativeEndian::endian && BitCastSafe<T>) {
+        return serialize_flat(destination, source); 
+    } else if constexpr (Scalar<T>) {
+        return serialize_scalar(destination, source, endianness); 
+    } else if constexpr (StaticContainer<T>) {
+        return serialize_static_container(destination, source, endianness); 
+    } else if constexpr (Aggregate<T>) {
+        return serialize_aggregate(destination, source, endianness); 
+    } else {
+        std::unreachable();
+    }
 }
 
 }

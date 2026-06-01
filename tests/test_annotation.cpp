@@ -11,10 +11,10 @@ struct PartialSerializable {
 };
 
 static_assert(std::is_trivially_copyable_v<PartialSerializable>);
-static_assert(stse::is_serializable_v<PartialSerializable>);
+static_assert(stse::Serializable<PartialSerializable>);
 
 static constexpr PartialSerializable ps{1, nullptr};
-// static_assert(stse::test::test_round_trip<ps>());
+static_assert(stse::test::test_round_trip<ps>());
 static_assert(stse::serial_size_v<PartialSerializable> == sizeof(int));
 
 ///
@@ -29,11 +29,11 @@ struct MultiSkip {
     bool operator==(const MultiSkip&) const = default;
 };
 
-static_assert(stse::is_serializable_v<MultiSkip>);
+static_assert(stse::Serializable<MultiSkip>);
 static_assert(stse::serial_size_v<MultiSkip> == sizeof(int) * 2);
 
 static constexpr MultiSkip ms{1, nullptr, 2, nullptr};
-// static_assert(stse::test::test_round_trip<ms>());
+static_assert(stse::test::test_round_trip<ms>());
 
 ///
 /// Skip on inherited field
@@ -50,10 +50,10 @@ struct SkipDerived : SkipBase {
     bool operator==(const SkipDerived&) const = default;
 };
 
-static_assert(stse::is_serializable_v<SkipBase>);
-static_assert(stse::is_serializable_v<SkipDerived>);
+static_assert(stse::Serializable<SkipBase>);
+static_assert(stse::Serializable<SkipDerived>);
 static_assert(stse::serial_size_v<SkipBase>    == sizeof(int));
 static_assert(stse::serial_size_v<SkipDerived> == sizeof(int) * 2);
 
 static constexpr SkipDerived sd{SkipBase{1, nullptr}, 2};
-// static_assert(stse::test::test_round_trip<sd>());
+static_assert(stse::test::test_round_trip<sd>());

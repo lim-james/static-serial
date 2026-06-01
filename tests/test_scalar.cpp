@@ -1,13 +1,13 @@
 #include "static_serial_test.hpp"
 
-static_assert(stse::is_serializable_v<char>);
-static_assert(stse::is_serializable_v<int>);
-static_assert(stse::is_serializable_v<short>);
-static_assert(stse::is_serializable_v<unsigned int>);
-static_assert(stse::is_serializable_v<float>);
-static_assert(stse::is_serializable_v<double>);
-static_assert(stse::is_serializable_v<long double>);
-static_assert(stse::is_serializable_v<bool>);
+static_assert(stse::Serializable<char>);
+static_assert(stse::Serializable<int>);
+static_assert(stse::Serializable<short>);
+static_assert(stse::Serializable<unsigned int>);
+static_assert(stse::Serializable<float>);
+static_assert(stse::Serializable<double>);
+static_assert(stse::Serializable<long double>);
+static_assert(stse::Serializable<bool>);
 
 static constexpr char   c = '0';
 static constexpr int    i = 0;
@@ -23,10 +23,10 @@ static_assert(stse::test::test_round_trip<b>(), "Round trip failed for bool");
 
 enum UnscopedEnum { option_a, option_b }; 
 static constexpr UnscopedEnum u = UnscopedEnum::option_a;
-static_assert(stse::is_serializable_v<UnscopedEnum>);
+static_assert(stse::Serializable<UnscopedEnum>);
 static_assert(stse::test::test_round_trip<u>(), "Round trip failed for unscoped enum");
 
 enum class ScopedEnum { option_a, option_b }; 
 static constexpr ScopedEnum e = ScopedEnum::option_a;
-static_assert(stse::is_serializable_v<ScopedEnum>);
+static_assert(stse::Serializable<ScopedEnum>);
 static_assert(stse::test::test_round_trip<e>(), "Round trip failed for scoped enum");
