@@ -97,14 +97,12 @@ constexpr std::span<std::byte> serialize_flat(std::span<std::byte> destination, 
 }
 
 template<Serializable T, EndianType Endian> 
-constexpr std::span<std::byte> serialize(
+constexpr std::span<std::byte> serialize_fields(
     std::span<std::byte> destination, 
     const T& source,
     Endian endianness
-) { 
-    if constexpr (Endian::endian == NativeEndian::endian && BitCastSafe<T>) {
-        return serialize_flat(destination, source); 
-    } else if constexpr (Scalar<T>) {
+) {
+    if constexpr (Scalar<T>) {
         return serialize_scalar(destination, source, endianness); 
     } else if constexpr (StaticContainer<T>) {
         return serialize_static_container(destination, source, endianness); 
@@ -112,6 +110,28 @@ constexpr std::span<std::byte> serialize(
         return serialize_aggregate(destination, source, endianness); 
     } else {
         std::unreachable();
+    }
+}
+
+
+template<Serializable T, EndianType Endian> 
+constexpr std::span<std::byte> serialize(
+    std::span<std::byte> destination, 
+    const T& source,
+    Endian endianness
+) { 
+    if constexpr (Endian::endian == NativeEndian::endian) {
+        if consteval {
+            if constexpr (BitCastSafe<T>) {
+                return serialize_flat(destination, source);
+            } else {
+                return serialize_fields(destination, source, endianness);
+            }
+        } else {
+            return serialize_flat(destination, source);
+        }
+    } else {
+        return serialize_fields(destination, source, endianness);
     }
 }
 
