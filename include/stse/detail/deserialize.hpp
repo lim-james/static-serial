@@ -78,23 +78,6 @@ constexpr std::span<const std::byte> deserialize_aggregate(
     return source;
 }
 
-template<Serializable T, EndianType Endian> 
-constexpr std::span<const std::byte> deserialize(
-    T& destination, 
-    std::span<const std::byte> source,
-    Endian endianness
-) { 
-    if constexpr (Scalar<T>) {
-        return deserialize_scalar(destination, source, endianness); 
-    } else if constexpr (StaticContainer<T>) {
-        return deserialize_static_container(destination, source, endianness); 
-    } else if constexpr (Aggregate<T>) {
-        return deserialize_aggregate(destination, source, endianness); 
-    } else {
-        std::unreachable();
-    }
-}
-
 template<Serializable T> 
 constexpr std::span<const std::byte> deserialize_flat(
     T& destination, 
@@ -118,4 +101,44 @@ constexpr std::span<const std::byte> deserialize_flat(
     }
     return source.subspan(raw_size<T>);
 }
+
+
+template<Serializable T, EndianType Endian> 
+constexpr std::span<const std::byte> deserialize_fields(
+    T& destination, 
+    std::span<const std::byte> source,
+    Endian endianness
+) {
+    if constexpr (Scalar<T>) {
+        return deserialize_scalar(destination, source, endianness); 
+    } else if constexpr (StaticContainer<T>) {
+        return deserialize_static_container(destination, source, endianness); 
+    } else if constexpr (Aggregate<T>) {
+        return deserialize_aggregate(destination, source, endianness); 
+    } else {
+        std::unreachable();
+    }
+}
+
+template<Serializable T, EndianType Endian> 
+constexpr std::span<const std::byte> deserialize(
+    T& destination, 
+    std::span<const std::byte> source,
+    Endian endianness
+) {
+    if constexpr (Endian::endian == NativeEndian::endian) {
+        if consteval {
+            if constexpr (BitCastSafe<T>) {
+                return deserialize_flat(destination, source);
+            } else {
+                return deserialize_fields(destination, source, endianness);
+            }
+        } else {
+            return deserialize_flat(destination, source);
+        }
+    } else {
+        return deserialize_fields(destination, source, endianness);
+    }
+}
+
 }
