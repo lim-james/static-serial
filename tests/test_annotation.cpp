@@ -57,3 +57,21 @@ static_assert(stse::serial_size_v<SkipDerived> == sizeof(int) * 2);
 
 static constexpr SkipDerived sd{SkipBase{1, nullptr}, 2};
 static_assert(stse::test::test_round_trip<sd>());
+
+///
+/// Single ignored field
+///
+
+struct PartialIgnored {
+    int a;
+    [[=stse::ignore]] int* b;
+    bool operator==(const PartialIgnored&) const = default;
+};
+
+static_assert(std::is_trivially_copyable_v<PartialIgnored>);
+static_assert(stse::Serializable<PartialIgnored>);
+
+static constexpr PartialIgnored pi{1, nullptr};
+static_assert(stse::test::test_round_trip<pi>());
+static_assert(stse::serial_size_v<PartialIgnored> == sizeof(int) + sizeof(void*));
+

@@ -134,10 +134,14 @@ constexpr auto deserialize_advance(
     pre(data.size() >= serial_size_v<Args...>)
 ```
 
-**Skip Member Annotation**
+**Skip & Ignore Member Annotation**
+Rule of thumb, skip will totally be ignored from the wire. Whereas ignored
+members exist on the wire as garbage bytes.
 ```cpp
 inline constexpr auto skip = skipserialization{};
-// e.g. [[=stse::skip]] int* ignore_member;
+inline constexpr auto ignore = ignoreserialization{};
+// e.g. [[=stse::skip]] int* skip_member;
+// e.g. [[=stse::ignore]] int* ignore_member;
 ```
 
 **Properties**
