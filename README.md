@@ -29,8 +29,8 @@ assert(stse::serial_size_v<OrderBookLevel> != sizeof(OrderBookLevel));
 ## Getting Started
 
 ### Requirements
-- GCC 16 (`g++-16`) — required for C++26 reflection and contracts support
-- CMake 3.25+
+- GCC 16: Required for C++26 reflection and contracts support
+- CMake 3.28+
 
 ```bash
 # Ubuntu
@@ -44,7 +44,20 @@ Add the [`include/stse`](https://github.com/lim-james/static-serial/blob/main/in
 #include "stse/stse.hpp"
 ```
 
-No module support yet.
+> No module support yet.
+
+### Build
+```bash
+git clone https://github.com/lim-james/static-serial.git
+cd static-serial
+make release # or: make debug
+```
+
+### Build manually
+```bash
+g++-16 -std=c++26 -freflection -fcontracts -fcontract-evaluation-semantic=observe \
+    -I path/to/include your_file.cpp -o your_file.out
+```
 
 ### Compile Flags
 
@@ -55,17 +68,6 @@ No module support yet.
 | `-fcontracts` | Contract annotations |
 | `-fcontract-evaluation-semantic=observe` | Recommended — logs violations without requiring a custom handler. See [Known Issues](#known-issues). |
 
-### Build with CMake
-```bash
-cmake -S . -B build -DCMAKE_CXX_COMPILER=/usr/bin/g++-16
-cmake --build build
-```
-
-### Build manually
-```bash
-g++-16 -std=c++26 -freflection -fcontracts -fcontract-evaluation-semantic=observe \
-    -I path/to/include your_file.cpp -o your_file.out
-```
 ## Public Interface
 
 **`serialize`** - serializes one or more objects into a stack-allocated byte array
