@@ -18,6 +18,32 @@
 
 static constexpr size_t ARENA_INITIAL_BLOCK = 4096;
 
+bool operator==(const Price& lhs, const Price& rhs) {
+    return lhs.mantissa() == rhs.mantissa() 
+        && lhs.exponent() == rhs.exponent();
+}
+
+bool operator==(const OrderBookLevel& lhs, const OrderBookLevel& rhs) {
+    return lhs.price()       == rhs.price() 
+        && lhs.quantity()    == rhs.quantity()
+        && lhs.order_count() == rhs.order_count();
+}
+
+bool operator==(const MarketSnapshot& lhs, const MarketSnapshot& rhs) {
+    return lhs.timestamp_ns() == rhs.timestamp_ns() 
+        && lhs.symbol()       == rhs.symbol()
+        && lhs.bids()[0]      == rhs.bids()[0]
+        && lhs.bids()[1]      == rhs.bids()[1]
+        && lhs.bids()[2]      == rhs.bids()[2]
+        && lhs.bids()[3]      == rhs.bids()[3]
+        && lhs.bids()[4]      == rhs.bids()[4]
+        && lhs.asks()[0]      == rhs.asks()[0]
+        && lhs.asks()[1]      == rhs.asks()[1]
+        && lhs.asks()[2]      == rhs.asks()[2]
+        && lhs.asks()[3]      == rhs.asks()[3]
+        && lhs.asks()[4]      == rhs.asks()[4];
+}
+
 google::protobuf::ArenaOptions make_arena_opts() {
     google::protobuf::ArenaOptions opts;
     opts.start_block_size = ARENA_INITIAL_BLOCK;
@@ -95,8 +121,9 @@ int main() {
 
         google::protobuf::Arena deser_arena(make_arena_opts());
 
+        std::size_t correct{};
         const auto start_timer = std::chrono::steady_clock::now();
-        for (std::size_t i = 0; i < NUMBER_OF_ENTRIES; ++i) {
+        for (auto entry: proto_entries) {
             deser_arena.Reset();
 
             uint32_t size;
@@ -107,13 +134,14 @@ int main() {
             restored->ParseFromCodedStream(&coded_stream);
             coded_stream.PopLimit(limit);
 
-            assert(restored->timestamp_ns() == proto_entries[i]->timestamp_ns());
-            assert(restored->symbol()       == proto_entries[i]->symbol());
+            correct += static_cast<std::size_t>(*entry == *restored);
+
         }
         const auto end_timer = std::chrono::steady_clock::now();
 
         std::println("Deserialize: {}",
             std::chrono::duration_cast<std::chrono::milliseconds>(end_timer - start_timer));
+        std::println("Correct: {}/{}", correct, NUMBER_OF_ENTRIES);
     }
 
     google::protobuf::ShutdownProtobufLibrary();
