@@ -55,7 +55,7 @@ consteval void enumerate_static_container(
         (enumerate_object<value_t>(
             sequence, 
             struct_offset + sizeof(value_t) * I,
-            wire_offset + sizeof(value_t) * I
+            wire_offset + raw_size<value_t> * I
         ), ...);
     }(std::make_index_sequence<std::tuple_size_v<T>>{});
 }
