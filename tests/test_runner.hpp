@@ -23,74 +23,106 @@ public:
         : failure_strategy_(failure_strategy)
         , test_label_(test_label)
         , test_fn_(test_fn)
-    {}
+    {
+        std::println("[TEST][INIT] Initialising '{}' suite", test_label_);
+    }
+
+    ~TestExecutor() noexcept {
+        std::println(
+            "[TEST][CLOSE] Wrapping up '{}' --- {} passed | {} failed",
+            test_label_,
+            total_passed_, 
+            total_ran_ - total_passed_
+        );
+    }
+
+    TestExecutor& run_single(Args&&... args) {
+        ++total_ran_;
+
+        auto test_passed = test_fn_(std::forward<Args&&>(args)...);
+        total_passed_ += static_cast<std::size_t>(test_passed);
+
+        std::println(
+            "      [SINGLE] Running tests {}/{} --- Result: {}",
+            total_passed_, total_ran_,
+            test_passed ? "PASS" : "FAIL"
+        );
+
+        return *this;
+    }
 
     template<typename... TestPacket>
-    bool operator()(TestPacket... test_suite) {
+    TestExecutor& run_sequence(TestPacket&&... packets) {
         static constexpr std::size_t test_count = sizeof...(TestPacket);
-        std::println("[TEST][INIT] Running tests for '{}' --- 0/{}", test_label_, test_count);
+        total_ran_ += test_count;
+
+        auto invoke_one = [this](auto&& packet) -> bool {
+            if constexpr (sizeof...(Args) == 1) {
+                return test_fn_(std::forward<decltype(packet)>(packet));
+            } else {
+                return std::apply(test_fn_, std::forward<decltype(packet)>(packet));
+            }
+        };
+
+        std::println("      [SEQUENCE] Running tests for '{}' --- 0/{}", test_label_, test_count);
 
         std::size_t ran_tests{};
-
         switch (failure_strategy_) {
         case FailureStrategy::EXIT_ON_FAIL:
         {
-            template for (auto [...test]: {test_suite...}) {
-                auto test_passed = test_fn_(test...);
+            (... && [&] {
+                auto passed = invoke_one(packets);
                 ++ran_tests;
+                total_passed_ += static_cast<std::size_t>(passed);
                 std::println(
-                    "[TEST][IN PROGRESS] Running {}/{} --- Result: {}",
+                    "      [IN PROGRESS] Running {}/{} --- Result: {}",
                     ran_tests, test_count,
-                    test_passed ? "PASS" : "FAIL (exiting now)"
+                    passed ? "PASS" : "FAIL (exiting now)"
                 );
-                if (!test_passed) {
-                    std::println(
-                        "[TEST][SUMMARY] Early exiting on '{}' --- Failed at {} --- {}/{} passed.",
-                        test_label_,
-                        ran_tests,
-                        ran_tests - 1, test_count
-                    );
-                    return false;
-                }
-            }
-            
-            std::println(
-                "[TEST][SUMMARY] Ran tests on '{}' --- All {}/{} passed!",
-                test_label_,
-                ran_tests, test_count
-            );
-            return true;
-        }
-        case FailureStrategy::CONTINUE_ON_FAIL:
-        {
-            std::size_t passing_tests{};
-            template for (auto [...test]: {test_suite...}) {
-                auto test_passed = test_fn_(test...);
-                passing_tests += static_cast<std::size_t>(test_passed);
-                ++ran_tests;
-                std::println(
-                    "[TEST][IN PROGRESS] Running {}/{} --- result: {}",
-                    ran_tests, test_count,
-                    test_passed ? "PASS" : "FAIL (carrying on)"
-                );
-            }
+                return passed;
+            }());
 
             std::println(
-                "[TEST][SUMMARY] Ran tests on '{}' --- {} passed | {} failed",
+                "      [SUMMARY] Ran sequence on '{}' --- {} passed | {} failed",
                 test_label_,
                 ran_tests, 
                 test_count - ran_tests
             );
-            return passing_tests == ran_tests;
+            break;
+        }
+        case FailureStrategy::CONTINUE_ON_FAIL:
+        {
+            std::size_t passing{};
+            (..., [&] {
+                auto passed = invoke_one(packets);
+                passing += static_cast<std::size_t>(passed);
+                ++ran_tests; ++total_passed_;
+                std::println(
+                    "      [IN PROGRESS] Running {}/{} --- result: {}",
+                    ran_tests, test_count,
+                    passed ? "PASS" : "FAIL (carrying on)"
+                );
+            }());
+
+            std::println(
+                "      [SUMMARY] Ran sequence on '{}' --- {} passed | {} failed",
+                test_label_,
+                passing, 
+                test_count - passing
+            );
+            break;
         }
         default: std::unreachable();
         }
+
+        return *this;
     }
 
 private:
 
     FailureStrategy failure_strategy_;
     std::string_view test_label_;
+    std::size_t total_passed_, total_ran_;
     [[no_unique_address]] fn_t test_fn_;
 
 };
