@@ -1,6 +1,7 @@
 #pragma once
 
 #include <utility>
+#include <cstdint>
 #include <string_view>
 #include <print>
 
@@ -19,34 +20,24 @@ class TestExecutor<bool(Args...)> {
 
 public:
 
-    TestExecutor(
+    constexpr TestExecutor(
         std::string_view test_label, 
-        fn_t&& test_fn, 
+        fn_t test_fn, 
         FailureStrategy failure_strategy = FailureStrategy::CONTINUE_ON_FAIL
     )
         : failure_strategy_(failure_strategy)
         , test_label_(test_label)
-        , test_fn_(std::forward<fn_t&&>(test_fn))
-    {
-        std::println("[TEST][INIT] Initialising '{}' suite", test_label_);
-    }
-
-    constexpr TestExecutor(
-        fn_t&& test_fn, 
-        FailureStrategy failure_strategy = FailureStrategy::CONTINUE_ON_FAIL
-    )
-        : failure_strategy_(failure_strategy)
-        , test_fn_(std::forward<fn_t&&>(test_fn))
+        , test_fn_(std::forward<fn_t>(test_fn))
     {}
 
     constexpr ~TestExecutor() noexcept {
         if not consteval {
-            std::println(
-                "[TEST][CLOSE] Wrapping up '{}' --- {} passed | {} failed",
-                test_label_,
-                total_passed_, 
-                total_ran_ - total_passed_
+            const bool all_passed = total_ran_ == total_passed_;
+            auto outcome = all_passed ? "ALL PASSED" :  std::format(
+                "{} passed | {} failed", 
+                total_passed_, total_ran_ - total_passed_
             );
+            log_line("Complete!", outcome);
         }
     }
 
@@ -64,11 +55,12 @@ public:
         total_passed_ += static_cast<std::size_t>(passed);
 
         if not consteval {
-            std::println(
-                "      [SINGLE] Running tests {}/{} --- Result: {}",
-                total_passed_, total_ran_,
-                passed ? "PASS" : "FAIL"
-            );
+            if (!passed) {
+                log_line(
+                    "Failed single", 
+                    std::format("{}/{}", total_passed_, total_ran_)
+                );
+            }
         } 
 
         return *this;
@@ -87,10 +79,6 @@ public:
             }
         };
 
-        if not consteval {
-            std::println("      [SEQUENCE] Running tests for '{}' --- 0/{}", test_label_, test_count);
-        }   
-
         std::size_t ran_tests{};
         switch (failure_strategy_) {
         case FailureStrategy::EXIT_ON_FAIL:
@@ -100,23 +88,15 @@ public:
                 ++ran_tests;
                 total_passed_ += static_cast<std::size_t>(passed);
                 if not consteval {
-                    std::println(
-                        "      [IN PROGRESS] Running {}/{} --- Result: {}",
-                        ran_tests, test_count,
-                        passed ? "PASS" : "FAIL (exiting now)"
-                    );
+                    if (!passed) {
+                        log_line(
+                            "Failed sequence",
+                            std::format("{}/{}", ran_tests, test_count)
+                        );
+                    }
                 }
                 return passed;
             }());
-
-            if not consteval {
-                std::println(
-                    "      [SUMMARY] Ran sequence on '{}' --- {} passed | {} failed",
-                    test_label_,
-                    ran_tests, 
-                    test_count - ran_tests
-                );
-            }
             break;
         }
         case FailureStrategy::CONTINUE_ON_FAIL:
@@ -128,22 +108,14 @@ public:
                 total_passed_ += static_cast<std::size_t>(passed);
                 ++ran_tests;
                 if not consteval {
-                    std::println(
-                        "      [IN PROGRESS] Running {}/{} --- result: {}",
-                        ran_tests, test_count,
-                        passed ? "PASS" : "FAIL (carrying on)"
-                    );
+                    if (!passed) {
+                        log_line(
+                            "Failed sequence",
+                            std::format("{}/{}", ran_tests, test_count)
+                        );
+                    }
                 }
             }());
-
-            if not consteval {
-                std::println(
-                    "      [SUMMARY] Ran sequence on '{}' --- {} passed | {} failed",
-                    test_label_,
-                    passing, 
-                    test_count - passing
-                );
-            }
             break;
         }
         default: std::unreachable();
@@ -160,9 +132,20 @@ private:
 
     FailureStrategy failure_strategy_;
     std::string_view test_label_;
-    std::size_t total_passed_{}, total_ran_{};
+    std::uint32_t total_passed_{}, total_ran_{};
     [[no_unique_address]] fn_t test_fn_;
 
+    void log_line(
+        std::string_view description, 
+        std::string_view result
+    ) {
+        auto label_column = std::format("'{}' ", test_label_);
+        auto description_column = std::format(" {}", description);
+        std::println(
+            "[TEST] {:-<32}{:->20} --- {}", 
+            label_column, description_column, result
+        );
+    }
 };
 
 template<typename... Args>
@@ -170,9 +153,3 @@ TestExecutor(std::string_view, bool(*)(Args...), FailureStrategy) -> TestExecuto
 
 template<typename... Args>
 TestExecutor(std::string_view, bool(*)(Args...)) -> TestExecutor<bool(Args...)>;
-
-template<typename... Args>
-TestExecutor(bool(*)(Args...)) -> TestExecutor<bool(Args...)>;
-
-template<typename... Args>
-TestExecutor(bool(*)(Args...), FailureStrategy) -> TestExecutor<bool(Args...)>;
