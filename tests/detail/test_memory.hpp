@@ -1,6 +1,7 @@
 #pragma once
 
 #include "stse/detail/memory.hpp"
+#include "tests/test_runner.hpp"
 
 #include <array>
 #include <span>
@@ -11,7 +12,7 @@ constexpr auto make_buffer(auto... items) -> std::array<std::byte, sizeof...(ite
     return {static_cast<std::byte>(items)...};
 }
 
-bool runtime_test_constexpr_memcpy(std::span<std::byte> buffer) {
+constexpr bool test_constexpr_memcpy(std::span<std::byte> buffer) {
     static constexpr std::size_t MAX_BUFFER_SIZE = 1024;
 
     const std::size_t size = buffer.size();
@@ -24,11 +25,10 @@ bool runtime_test_constexpr_memcpy(std::span<std::byte> buffer) {
     return std::ranges::equal(buffer, destination_span);
 }
 
-template<std::size_t N>
-constexpr bool compile_time_test_constexpr_memcpy(std::array<std::byte, N> buffer) {
-    auto destination = std::array<std::byte, N>{};
-    stse::detail::constexpr_memcpy(destination.data(), buffer.data(), N);
-    return std::ranges::equal(buffer, destination_span);
-}
-
-static_assert(compile_time_test_constexpr_memcpy(make_buffer('A', 'B', 'C')));
+static_assert(
+    TestExecutor{&test_constexpr_memcpy}
+        .run_sequence(
+            make_buffer('A', 'B', 'C'),
+            make_buffer('1', '0', '3', 'S', 'a', 'b')
+        )
+);

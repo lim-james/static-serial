@@ -31,13 +31,23 @@ public:
         std::println("[TEST][INIT] Initialising '{}' suite", test_label_);
     }
 
-    ~TestExecutor() noexcept {
-        std::println(
-            "[TEST][CLOSE] Wrapping up '{}' --- {} passed | {} failed",
-            test_label_,
-            total_passed_, 
-            total_ran_ - total_passed_
-        );
+    constexpr TestExecutor(
+        fn_t&& test_fn, 
+        FailureStrategy failure_strategy = FailureStrategy::CONTINUE_ON_FAIL
+    )
+        : failure_strategy_(failure_strategy)
+        , test_fn_(std::forward<fn_t&&>(test_fn))
+    {}
+
+    constexpr ~TestExecutor() noexcept {
+        if not consteval {
+            std::println(
+                "[TEST][CLOSE] Wrapping up '{}' --- {} passed | {} failed",
+                test_label_,
+                total_passed_, 
+                total_ran_ - total_passed_
+            );
+        }
     }
 
     TestExecutor(const TestExecutor&) = delete;
@@ -47,23 +57,25 @@ public:
     void operator=(TestExecutor&&) = delete;
 
     template<typename... TestArgs>
-    TestExecutor& run_single(TestArgs&&... args) {
+    constexpr TestExecutor& run_single(TestArgs&&... args) {
         ++total_ran_;
 
-        auto test_passed = test_fn_(std::forward<TestArgs&&>(args)...);
-        total_passed_ += static_cast<std::size_t>(test_passed);
+        auto passed = test_fn_(std::forward<TestArgs&&>(args)...);
+        total_passed_ += static_cast<std::size_t>(passed);
 
-        std::println(
-            "      [SINGLE] Running tests {}/{} --- Result: {}",
-            total_passed_, total_ran_,
-            test_passed ? "PASS" : "FAIL"
-        );
+        if not consteval {
+            std::println(
+                "      [SINGLE] Running tests {}/{} --- Result: {}",
+                total_passed_, total_ran_,
+                passed ? "PASS" : "FAIL"
+            );
+        } 
 
         return *this;
     }
 
     template<typename... TestPacket>
-    TestExecutor& run_sequence(TestPacket&&... packets) {
+    constexpr TestExecutor& run_sequence(TestPacket&&... packets) {
         static constexpr std::size_t test_count = sizeof...(TestPacket);
         total_ran_ += test_count;
 
@@ -75,7 +87,9 @@ public:
             }
         };
 
-        std::println("      [SEQUENCE] Running tests for '{}' --- 0/{}", test_label_, test_count);
+        if not consteval {
+            std::println("      [SEQUENCE] Running tests for '{}' --- 0/{}", test_label_, test_count);
+        }   
 
         std::size_t ran_tests{};
         switch (failure_strategy_) {
@@ -85,20 +99,24 @@ public:
                 auto passed = invoke_one(packets);
                 ++ran_tests;
                 total_passed_ += static_cast<std::size_t>(passed);
-                std::println(
-                    "      [IN PROGRESS] Running {}/{} --- Result: {}",
-                    ran_tests, test_count,
-                    passed ? "PASS" : "FAIL (exiting now)"
-                );
+                if not consteval {
+                    std::println(
+                        "      [IN PROGRESS] Running {}/{} --- Result: {}",
+                        ran_tests, test_count,
+                        passed ? "PASS" : "FAIL (exiting now)"
+                    );
+                }
                 return passed;
             }());
 
-            std::println(
-                "      [SUMMARY] Ran sequence on '{}' --- {} passed | {} failed",
-                test_label_,
-                ran_tests, 
-                test_count - ran_tests
-            );
+            if not consteval {
+                std::println(
+                    "      [SUMMARY] Ran sequence on '{}' --- {} passed | {} failed",
+                    test_label_,
+                    ran_tests, 
+                    test_count - ran_tests
+                );
+            }
             break;
         }
         case FailureStrategy::CONTINUE_ON_FAIL:
@@ -107,20 +125,25 @@ public:
             (..., [&] {
                 auto passed = invoke_one(packets);
                 passing += static_cast<std::size_t>(passed);
-                ++ran_tests; ++total_passed_;
-                std::println(
-                    "      [IN PROGRESS] Running {}/{} --- result: {}",
-                    ran_tests, test_count,
-                    passed ? "PASS" : "FAIL (carrying on)"
-                );
+                total_passed_ += static_cast<std::size_t>(passed);
+                ++ran_tests;
+                if not consteval {
+                    std::println(
+                        "      [IN PROGRESS] Running {}/{} --- result: {}",
+                        ran_tests, test_count,
+                        passed ? "PASS" : "FAIL (carrying on)"
+                    );
+                }
             }());
 
-            std::println(
-                "      [SUMMARY] Ran sequence on '{}' --- {} passed | {} failed",
-                test_label_,
-                passing, 
-                test_count - passing
-            );
+            if not consteval {
+                std::println(
+                    "      [SUMMARY] Ran sequence on '{}' --- {} passed | {} failed",
+                    test_label_,
+                    passing, 
+                    test_count - passing
+                );
+            }
             break;
         }
         default: std::unreachable();
@@ -129,11 +152,15 @@ public:
         return *this;
     }
 
+    constexpr operator bool() const {
+        return total_ran_ == total_passed_;
+    }
+
 private:
 
     FailureStrategy failure_strategy_;
     std::string_view test_label_;
-    std::size_t total_passed_, total_ran_;
+    std::size_t total_passed_{}, total_ran_{};
     [[no_unique_address]] fn_t test_fn_;
 
 };
@@ -143,3 +170,9 @@ TestExecutor(std::string_view, bool(*)(Args...), FailureStrategy) -> TestExecuto
 
 template<typename... Args>
 TestExecutor(std::string_view, bool(*)(Args...)) -> TestExecutor<bool(Args...)>;
+
+template<typename... Args>
+TestExecutor(bool(*)(Args...)) -> TestExecutor<bool(Args...)>;
+
+template<typename... Args>
+TestExecutor(bool(*)(Args...), FailureStrategy) -> TestExecutor<bool(Args...)>;
