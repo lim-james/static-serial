@@ -32,7 +32,10 @@ consteval std::size_t size_of() {
 }
 
 
-struct ByteRange { std::size_t struct_offset, wire_offset, count; };
+struct ByteRange { 
+    std::size_t struct_offset, wire_offset, count; 
+    bool operator==(const ByteRange&) const = default;
+};
 using ByteSequence = std::vector<ByteRange>;
 
 template<Scalar T>
