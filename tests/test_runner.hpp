@@ -19,10 +19,14 @@ class TestExecutor<bool(Args...)> {
 
 public:
 
-    TestExecutor(std::string_view test_label, fn_t&& test_fn, FailureStrategy failure_strategy)
+    TestExecutor(
+        std::string_view test_label, 
+        fn_t&& test_fn, 
+        FailureStrategy failure_strategy = FailureStrategy::CONTINUE_ON_FAIL
+    )
         : failure_strategy_(failure_strategy)
         , test_label_(test_label)
-        , test_fn_(test_fn)
+        , test_fn_(std::forward<fn_t&&>(test_fn))
     {
         std::println("[TEST][INIT] Initialising '{}' suite", test_label_);
     }
@@ -36,10 +40,17 @@ public:
         );
     }
 
-    TestExecutor& run_single(Args&&... args) {
+    TestExecutor(const TestExecutor&) = delete;
+    void operator=(const TestExecutor&) = delete;
+
+    TestExecutor(TestExecutor&&) = delete;
+    void operator=(TestExecutor&&) = delete;
+
+    template<typename... TestArgs>
+    TestExecutor& run_single(TestArgs&&... args) {
         ++total_ran_;
 
-        auto test_passed = test_fn_(std::forward<Args&&>(args)...);
+        auto test_passed = test_fn_(std::forward<TestArgs&&>(args)...);
         total_passed_ += static_cast<std::size_t>(test_passed);
 
         std::println(
@@ -129,3 +140,6 @@ private:
 
 template<typename... Args>
 TestExecutor(std::string_view, bool(*)(Args...), FailureStrategy) -> TestExecutor<bool(Args...)>;
+
+template<typename... Args>
+TestExecutor(std::string_view, bool(*)(Args...)) -> TestExecutor<bool(Args...)>;
