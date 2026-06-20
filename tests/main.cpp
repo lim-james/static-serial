@@ -1,5 +1,8 @@
 #include "stse/stse.hpp"
 
+#include "tests/test_runner.hpp"
+#include "tests/detail/test_memory.hpp"
+
 #include <cassert>
 
 struct A {
@@ -30,4 +33,10 @@ int main() {
 
     assert(a == a_parsed);
     assert(b == b_parsed);
+
+    TestExecutor{"detail::constexpr_memcpy", &runtime_test_constexpr_memcpy}
+        .run_sequence(
+            make_buffer('A', 'B', 'C'),
+            make_buffer('1', '0', '3', 'S', 'a', 'b')
+        );
 }

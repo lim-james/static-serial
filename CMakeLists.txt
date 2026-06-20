@@ -41,9 +41,10 @@ add_executable(demo demo.cpp)
 target_link_libraries(demo PRIVATE stse)
 target_compile_options(demo PRIVATE -Werror)
 
-file(GLOB TEST_SOURCES tests/*.cpp)
+set(TEST_SOURCES tests/main.cpp)
 add_executable(tests ${TEST_SOURCES})
 target_link_libraries(tests PRIVATE stse)
+target_include_directories(tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 # Benchmarks — opt-in since protobuf is an external dep
 option(STSE_BUILD_BENCHMARKS "Build benchmarks (requires protobuf)" OFF)
