@@ -139,7 +139,7 @@ private:
         std::string_view description, 
         std::string_view result
     ) {
-        auto label_column = std::format("'{}' ", test_label_);
+        auto label_column = std::format("{} ", test_label_);
         auto description_column = std::format(" {}", description);
         std::println(
             "[TEST] {:-<32}{:->20} --- {}", 
