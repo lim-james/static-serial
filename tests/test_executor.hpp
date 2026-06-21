@@ -5,6 +5,8 @@
 #include <string_view>
 #include <print>
 
+namespace stse::tests {
+
 template<typename T>
 class TestExecutor;
 
@@ -153,3 +155,5 @@ TestExecutor(std::string_view, bool(*)(Args...), FailureStrategy) -> TestExecuto
 
 template<typename... Args>
 TestExecutor(std::string_view, bool(*)(Args...)) -> TestExecutor<bool(Args...)>;
+
+}

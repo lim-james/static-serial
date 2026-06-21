@@ -8,6 +8,8 @@
 #include <cassert>
 #include <ranges>
 
+namespace stse::tests {
+
 constexpr auto make_buffer(auto... items) -> std::array<std::byte, sizeof...(items)> {
     return {static_cast<std::byte>(items)...};
 }
@@ -34,3 +36,5 @@ constexpr bool test_constexpr_memcpy() {
 }
 
 static_assert(test_constexpr_memcpy());
+
+}

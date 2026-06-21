@@ -3,7 +3,7 @@
 #include "stse/stse.hpp"
 #include <type_traits>
 
-namespace stse::test {
+namespace stse::tests {
 
 constexpr bool test_round_trip_inplace(const auto& data) {
     using T = std::remove_cvref_t<decltype(data)>;
