@@ -30,7 +30,7 @@ template<Scalar T, EndianType Endian>
 constexpr std::span<std::byte> serialize_scalar(
     std::span<std::byte> destination, 
     const T& source,
-    [[maybe_unused]] Endian endianness
+    Endian 
 ) {
     static constexpr std::size_t value_byte_count = raw_size<T>;
     using value_buffer_t = std::array<std::byte, value_byte_count>;
@@ -64,7 +64,7 @@ constexpr std::span<std::byte> serialize_static_container(
 
 template<Aggregate T, EndianType Endian>
 constexpr std::span<std::byte> serialize_aggregate(
-    [[maybe_unused]] std::span<std::byte> destination,
+    std::span<std::byte> destination,
     const T& source,
     [[maybe_unused]] Endian endianness
 ) {
