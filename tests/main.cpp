@@ -15,6 +15,7 @@ int main() {
     stse::tests::test_skip_annotation();
     stse::tests::test_ignore_annotation();
     stse::tests::test_serialize_scalar();
+    stse::tests::test_serialize_container();
     stse::tests::test_scalar();
 }
 
