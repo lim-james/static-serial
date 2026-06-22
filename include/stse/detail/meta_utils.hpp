@@ -46,11 +46,11 @@ consteval auto get_all_data_members_of() {
 template<typename T>
 inline constexpr auto all_data_members_of = get_all_data_members_of<T>();
 
-static constexpr auto skip_serialization = std::views::filter([](auto info) { 
+inline constexpr auto skip_serialization = std::views::filter([](auto info) { 
     return !has_annotation<skipserialization>(info); 
 });
 
-static constexpr auto ignore_serialization = std::views::filter([](auto info) { 
+inline constexpr auto ignore_serialization = std::views::filter([](auto info) { 
     return !has_annotation<ignoreserialization>(info); 
 });
 
