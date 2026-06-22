@@ -60,4 +60,4 @@ consteval bool test_variadic_round_trip_endian(const auto&... data) {
     return ((data == restored) && ...);
 }
 
-}
+} // namespace stse::tests

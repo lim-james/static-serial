@@ -37,4 +37,4 @@ constexpr bool test_constexpr_memcpy() {
 
 static_assert(test_constexpr_memcpy());
 
-}
+} // namespace stse::tests
