@@ -26,6 +26,7 @@ target_include_directories(stse INTERFACE include)
 target_compile_options(stse INTERFACE
     -Wall -Wextra -Wpedantic
     -Wuninitialized -Wunused -Wconversion
+    -Wnrvo
 )
 
 # Contract semantic per build type
