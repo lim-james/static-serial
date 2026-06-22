@@ -12,9 +12,7 @@ consteval bool has_annotation(std::meta::info info) {
     auto annotations = std::meta::annotations_of(info) 
                      | std::views::transform(std::meta::type_of)
                      | std::views::transform(std::meta::remove_cv);
-
     auto match_annotation = [](auto a) { return a == ^^Annotation; };
-
     return std::ranges::any_of(annotations, match_annotation);
 }
 
@@ -27,8 +25,9 @@ consteval auto get_all_data_members_of() {
     );
 
     template for (constexpr auto base: bases) {
-        auto parent_members = get_all_data_members_of<typename[:std::meta::type_of(base):]>();
-        for (auto member: parent_members) all_data_members.push_back(member);
+        using base_t = typename[:std::meta::type_of(base):];
+        static constexpr auto parent_members = get_all_data_members_of<base_t>();
+        std::ranges::copy(parent_members, std::back_inserter(all_data_members));
     }
 
     static constexpr auto data_members = std::define_static_array(
@@ -37,8 +36,7 @@ consteval auto get_all_data_members_of() {
             std::meta::access_context::unchecked()
         )
     );
-
-    template for (constexpr auto member: data_members) all_data_members.push_back(member);
+    std::ranges::copy(data_members, std::back_inserter(all_data_members));
 
     return std::define_static_array(all_data_members);
 }
