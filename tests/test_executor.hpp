@@ -53,7 +53,7 @@ public:
     constexpr TestExecutor& run_single(TestArgs&&... args) {
         ++total_ran_;
 
-        auto passed = test_fn_(std::forward<TestArgs&&>(args)...);
+        auto passed = test_fn_(args...);
         total_passed_ += static_cast<std::size_t>(passed);
 
         if not consteval {
