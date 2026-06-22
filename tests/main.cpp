@@ -2,6 +2,7 @@
 
 #include "tests/types.hpp"
 #include "tests/detail/test_memory.hpp"
+#include "tests/detail/test_meta_utils.hpp"
 #include "tests/detail/test_layout.hpp"
 #include "tests/detail/test_concepts.hpp"
 #include "tests/test_annotation.hpp"
