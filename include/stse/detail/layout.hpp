@@ -5,6 +5,7 @@
 
 #include <vector>
 #include <meta>
+#include <algorithm>
 
 namespace stse::detail {
 
@@ -54,13 +55,13 @@ consteval void enumerate_static_container(
     std::size_t wire_offset
 ) {
     using value_t = typename T::value_type;
-    [&]<std::size_t... I>(std::index_sequence<I...>) {
-        (enumerate_object<value_t>(
+    for (std::size_t i{}; i < std::tuple_size_v<T>; ++i) {
+        enumerate_object<value_t>(
             sequence, 
-            struct_offset + sizeof(value_t) * I,
-            wire_offset + raw_size<value_t> * I
-        ), ...);
-    }(std::make_index_sequence<std::tuple_size_v<T>>{});
+            struct_offset + sizeof(value_t) * i,
+            wire_offset + raw_size<value_t> * i
+        );
+    }
 }
 
 template<Aggregate T>
@@ -103,7 +104,7 @@ consteval ByteSequence compress_layout(const ByteSequence& raw_sequence) {
     for (auto [struct_offset, wire_offset, count]: raw_sequence) {
         if (!compressed.empty() && 
             struct_offset == compressed.back().struct_offset + compressed.back().count &&
-            wire_offset == compressed.back().wire_offset + compressed.back().count) {
+            wire_offset   == compressed.back().wire_offset   + compressed.back().count) {
             compressed.back().count += count;
         } else {
             compressed.emplace_back(struct_offset, wire_offset, count);
@@ -118,8 +119,7 @@ template<Serializable T>
 consteval ByteSequence build_sequence() {
     ByteSequence sequence{};
     enumerate_object<T>(sequence);
-    sequence = compress_layout(sequence);
-    return sequence;
+    return compress_layout(sequence);
 }
 
 template<Serializable T>
@@ -133,7 +133,7 @@ consteval auto compute_byte_layout() {
     auto sequence = build_sequence<T>();
 
     std::array<ByteRange, N> arr{};
-    for (std::size_t i = 0; i < N; ++i) arr[i] = sequence[i];
+    std::copy_n(sequence.begin(), N, arr.begin());
 
     return std::define_static_array(arr);
 }
