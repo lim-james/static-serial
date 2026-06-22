@@ -60,6 +60,16 @@ static_assert(stse::detail::raw_size<std::array<_8b, N>> == 8 * N);
 static_assert(stse::detail::raw_size<std::array<FlatCompactAggregate_3b, N>>
     == stse::detail::raw_size<FlatCompactAggregate_3b> * N);
 
+static_assert(stse::detail::raw_size<WithSkippedPointer_2w> != sizeof(WithSkippedPointer_2w));
+static_assert(stse::detail::raw_size<WithSkippedPointer_2w> == 1);
+static_assert(stse::detail::raw_size<WithMultiSkippedPointers_4w> != sizeof(WithMultiSkippedPointers_4w));
+static_assert(stse::detail::raw_size<WithMultiSkippedPointers_4w> == 2);
+static_assert(stse::detail::raw_size<WithSkippedParent_3w> != sizeof(WithSkippedParent_3w));
+static_assert(stse::detail::raw_size<WithSkippedParent_3w> == 2);
+static_assert(stse::detail::raw_size<WithIgnoredPointer_2w> != sizeof(WithIgnoredPointer_2w));
+static_assert(stse::detail::raw_size<WithIgnoredPointer_2w> == 1 + WORD);
+
+
 static_assert(stse::detail::count_byte_ranges<FlatCompactAggregate_3b>() == 1);
 static_assert(stse::detail::byte_layout_of<FlatCompactAggregate_3b>[0] ==
     stse::detail::ByteRange{.struct_offset = 0, .wire_offset = 0, .count = 3});
@@ -133,5 +143,26 @@ static_assert(stse::detail::byte_layout_of<std::array<FlatInternalPaddedAggregat
     stse::detail::ByteRange{.struct_offset = 12, .wire_offset =  8, .count = 6});
 static_assert(stse::detail::byte_layout_of<std::array<FlatInternalPaddedAggregate_8b, 3>>[3] ==
     stse::detail::ByteRange{.struct_offset = 20, .wire_offset = 14, .count = 4});
+
+static_assert(stse::detail::count_byte_ranges<WithSkippedPointer_2w>() == 1);
+static_assert(stse::detail::byte_layout_of<WithSkippedPointer_2w>[0] ==
+    stse::detail::ByteRange{.struct_offset =  0, .wire_offset =  0, .count = 1});
+
+static_assert(stse::detail::count_byte_ranges<WithMultiSkippedPointers_4w>() == 2);
+static_assert(stse::detail::byte_layout_of<WithMultiSkippedPointers_4w>[0] ==
+    stse::detail::ByteRange{.struct_offset =  0, .wire_offset =  0, .count = 1});
+static_assert(stse::detail::byte_layout_of<WithMultiSkippedPointers_4w>[1] ==
+    stse::detail::ByteRange{.struct_offset =  2 * WORD, .wire_offset =  1, .count = 1});
+
+static_assert(stse::detail::count_byte_ranges<WithSkippedParent_3w>() == 2);
+static_assert(stse::detail::byte_layout_of<WithSkippedParent_3w>[0] ==
+    stse::detail::ByteRange{.struct_offset =  0, .wire_offset =  0, .count = 1});
+static_assert(stse::detail::byte_layout_of<WithSkippedParent_3w>[1] ==
+    stse::detail::ByteRange{.struct_offset =  2 * WORD, .wire_offset =  1, .count = 1});
+
+static_assert(stse::detail::count_byte_ranges<WithIgnoredPointer_2w>() == 1);
+static_assert(stse::detail::byte_layout_of<WithIgnoredPointer_2w>[0] ==
+    stse::detail::ByteRange{.struct_offset =  0, .wire_offset =  0, .count = 1});
+
 
 } // namespace stse::tests
