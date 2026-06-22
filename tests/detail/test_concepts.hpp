@@ -49,8 +49,6 @@ static_assert(stse::detail::Aggregate<concepts_A>);
 static_assert(false == stse::detail::Aggregate<int>);
 static_assert(false == stse::detail::Aggregate<std::array<int, 5>>);
 
-
-
 static_assert(stse::Serializable<char>);
 static_assert(stse::Serializable<int>);
 static_assert(stse::Serializable<short>);
@@ -61,6 +59,22 @@ static_assert(stse::Serializable<long double>);
 static_assert(stse::Serializable<bool>);
 static_assert(stse::Serializable<UnscopedEnum>);
 static_assert(stse::Serializable<ScopedEnum>);
+
+static_assert(stse::Serializable<FlatCompactAggregate_3b>);
+static_assert(stse::Serializable<FlatCompactAggregate_12b>);
+static_assert(stse::Serializable<FlatInternalPaddedAggregate_8b>);
+static_assert(stse::Serializable<FlatTailPaddedAggregate_12b>);
+static_assert(stse::Serializable<WithCompactArray_4b>);
+static_assert(stse::Serializable<WithPaddedArray_12b>);
+static_assert(stse::Serializable<NestedCompactAggregate_5b>);
+static_assert(stse::Serializable<NestedPaddedAggregate_12b>);
+static_assert(stse::Serializable<DeeplyNestedAggregate_16b>);
+static_assert(stse::Serializable<ArrayOfStructsAggregate_8b>);
+
+static_assert(stse::Serializable<WithSkippedPointer_2w>);
+static_assert(stse::Serializable<WithMultiSkippedPointers_4w>);
+static_assert(stse::Serializable<WithSkippedParent_3w>);
+static_assert(stse::Serializable<WithIgnoredPointer_2w>);
 
 using serializable_t = int;
 
