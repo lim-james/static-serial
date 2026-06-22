@@ -207,6 +207,7 @@ static_assert(offsetof(ArrayOfStructsAggregate_8b, b) == 6);
 
 /// Structs with annotated fields
 
+// GCC complains about offsetof on non-standard-layout, but for this scope its ok.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Winvalid-offsetof"
 
