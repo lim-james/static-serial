@@ -34,17 +34,18 @@ constexpr std::span<std::byte> serialize_scalar(
 ) {
     static constexpr std::size_t value_byte_count = raw_size<T>;
     using value_buffer_t = std::array<std::byte, value_byte_count>;
-    value_buffer_t bytes;
 
-    if constexpr (Endian::endian == NativeEndian::endian) {
-        bytes = std::bit_cast<value_buffer_t>(source);
-    } else if constexpr (std::is_integral_v<T>) {
-        bytes = std::bit_cast<value_buffer_t>(std::byteswap(source));
-    } else {
-        using U = uint_of_size_t<T>;
-        auto byte_buffer = std::bit_cast<U>(source);
-        bytes = std::bit_cast<value_buffer_t>(std::byteswap(byte_buffer));
-    }
+    value_buffer_t bytes = [&source] {
+        if constexpr (Endian::endian == NativeEndian::endian) {
+            return std::bit_cast<value_buffer_t>(source);
+        } else if constexpr (std::is_integral_v<T>) {
+            return std::bit_cast<value_buffer_t>(std::byteswap(source));
+        } else {
+            using U = uint_of_size_t<T>;
+            auto byte_buffer = std::bit_cast<U>(source);
+            return std::bit_cast<value_buffer_t>(std::byteswap(byte_buffer));
+        }
+    }();
 
     constexpr_memcpy(destination.data(), bytes.data(), value_byte_count);
 
