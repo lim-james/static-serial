@@ -144,7 +144,7 @@ private:
         auto label_column = std::format("{} ", test_label_);
         auto description_column = std::format(" {}", description);
         std::println(
-            "[TEST] {:-<48}{:->16} --- {}", 
+            "[TEST] {:-<64}{:->16} --- {}", 
             label_column, description_column, result
         );
     }

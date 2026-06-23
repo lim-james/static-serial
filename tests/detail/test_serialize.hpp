@@ -29,6 +29,16 @@ constexpr bool validate_container_serialization(
     return std::ranges::equal(raw_bytes, buffer);
 }
 
+template<Aggregate T, stse::detail::EndianType Endian>
+constexpr bool validate_aggregate_serialization(
+    T items, 
+    std::span<std::byte> raw_bytes
+) {
+    std::array<std::byte, stse::detail::raw_size<T>> buffer{};
+    stse::detail::serialize_aggregate(buffer, items, Endian{});
+    return std::ranges::equal(raw_bytes, buffer);
+}
+
 constexpr bool test_serialize_scalar() noexcept {
     bool native_u8 = TestExecutor{
         "detail::serialize_scalar<u8, native>",
@@ -174,7 +184,32 @@ constexpr bool test_serialize_container() noexcept {
     );
 }
 
+constexpr bool test_serialize_aggregate() noexcept {
+    using native = stse::detail::NativeEndian;
+
+    bool flat_compact = TestExecutor{
+        "detail::serialize_aggregate<FlatCompactAggregate_3b>",
+        &validate_aggregate_serialization<FlatCompactAggregate_3b, native>
+    }
+    .run_single(
+        FlatCompactAggregate_3b{0x80, 0xFF, 0x40},
+        make_bytes(0x80, 0xFF, 0x40)
+    );
+
+    bool flat_internal_padded = TestExecutor{
+        "detail::serialize_aggregate<FlatInternalPaddedAggregate_8b>",
+        &validate_aggregate_serialization<FlatInternalPaddedAggregate_8b, native>
+    }
+    .run_single(
+        FlatInternalPaddedAggregate_8b{0x80, 0xFF, 0x4012'3456},
+        make_bytes(0x80, 0xFF, 0x56, 0x34, 0x12, 0x40)
+    );
+
+    return flat_compact && flat_internal_padded;
+}
+
 static_assert(test_serialize_scalar());
 static_assert(test_serialize_container());
+static_assert(test_serialize_aggregate());
 
 } // namespace stse::tests 
