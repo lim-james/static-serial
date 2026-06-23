@@ -11,27 +11,34 @@
 #include "tests/test_executor.hpp"
 #include "tests/test_scalar.hpp"
 
+enum class ExitCode: int { SUCCESS = 0, FAILED = 1 };
+
 int main() {
-    stse::tests::test_constexpr_memcpy();
-    stse::tests::test_skip_annotation();
-    stse::tests::test_ignore_annotation();
-    stse::tests::test_serialize_scalar();
-    stse::tests::test_serialize_container_base();
-    stse::tests::test_serialize_container_flat();
-    stse::tests::test_serialize_container_final();
-    stse::tests::test_serialize_aggregate_base();
-    stse::tests::test_serialize_aggregate_flat();
-    stse::tests::test_serialize_aggregate_final();
-    stse::tests::test_serialize_annotated_aggregate_base();
-    stse::tests::test_serialize_annotated_aggregate_final();
-    stse::tests::test_deserialize_scalar();
-    stse::tests::test_deserialize_container_base();
-    stse::tests::test_deserialize_container_flat();
-    stse::tests::test_deserialize_container_final();
-    stse::tests::test_deserialize_aggregate_base();
-    stse::tests::test_deserialize_aggregate_flat();
-    stse::tests::test_deserialize_aggregate_final();
-    stse::tests::test_deserialize_annotated_aggregate_base();
-    stse::tests::test_deserialize_annotated_aggregate_final();
-    stse::tests::test_scalar();
+    bool all_passed = true;
+
+    all_passed &= stse::tests::test_constexpr_memcpy();
+    all_passed &= stse::tests::test_skip_annotation();
+    all_passed &= stse::tests::test_ignore_annotation();
+    all_passed &= stse::tests::test_serialize_scalar();
+    all_passed &= stse::tests::test_serialize_container_base();
+    all_passed &= stse::tests::test_serialize_container_flat();
+    all_passed &= stse::tests::test_serialize_container_final();
+    all_passed &= stse::tests::test_serialize_aggregate_base();
+    all_passed &= stse::tests::test_serialize_aggregate_flat();
+    all_passed &= stse::tests::test_serialize_aggregate_final();
+    all_passed &= stse::tests::test_serialize_annotated_aggregate_base();
+    all_passed &= stse::tests::test_serialize_annotated_aggregate_final();
+    all_passed &= stse::tests::test_deserialize_scalar();
+    all_passed &= stse::tests::test_deserialize_container_base();
+    all_passed &= stse::tests::test_deserialize_container_flat();
+    all_passed &= stse::tests::test_deserialize_container_final();
+    all_passed &= stse::tests::test_deserialize_aggregate_base();
+    all_passed &= stse::tests::test_deserialize_aggregate_flat();
+    all_passed &= stse::tests::test_deserialize_aggregate_final();
+    all_passed &= stse::tests::test_deserialize_annotated_aggregate_base();
+    all_passed &= stse::tests::test_deserialize_annotated_aggregate_final();
+    all_passed &= stse::tests::test_scalar();
+
+    return all_passed ? static_cast<int>(ExitCode::SUCCESS)
+                      : static_cast<int>(ExitCode::FAILED);
 }
