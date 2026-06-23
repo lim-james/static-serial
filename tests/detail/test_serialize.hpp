@@ -16,26 +16,24 @@ constexpr bool validate_scalar_serialization(T item, std::span<std::byte> raw_by
     return std::ranges::equal(raw_bytes, buffer);
 }
 
-template<typename T, std::size_t N, stse::detail::EndianType Endian>
+template<typename T, std::size_t N, auto serialize_fn>
 constexpr bool validate_container_serialization(
     std::array<T, N> items, 
     std::span<std::byte> raw_bytes
 ) {
-    using container_t = std::array<std::byte, stse::detail::raw_size<T> * N>;
-    static_assert(StaticContainer<container_t>);
-
-    auto buffer = container_t{};
-    stse::detail::serialize_static_container(buffer, items, Endian{});
+    static_assert(StaticContainer<decltype(items)>);
+    std::array<std::byte, stse::detail::raw_size<T> * N> buffer{};
+    serialize_fn(buffer, items);
     return std::ranges::equal(raw_bytes, buffer);
 }
 
-template<Aggregate T, stse::detail::EndianType Endian>
+template<Aggregate T, auto serialize_fn>
 constexpr bool validate_aggregate_serialization(
     T items, 
     std::span<std::byte> raw_bytes
 ) {
     std::array<std::byte, stse::detail::raw_size<T>> buffer{};
-    stse::detail::serialize_aggregate(buffer, items, Endian{});
+    serialize_fn(buffer, items);
     return std::ranges::equal(raw_bytes, buffer);
 }
 
@@ -172,10 +170,11 @@ constexpr bool test_serialize_scalar() noexcept {
         && native_u64 && big_u64 && little_u64;
 }
 
+template<auto serialize_fn> 
 constexpr bool test_serialize_container() noexcept {
     return TestExecutor{
         "detail::serialize_container<array<u16, 6>>",
-        &validate_container_serialization<std::uint16_t, 6, stse::detail::NativeEndian>
+        &validate_container_serialization<std::uint16_t, 6, serialize_fn>
     }
     .run_single(
         std::array<std::uint16_t, 6>{0, 0x80, 0xFF, 0x400, 0x1234, 0xFFFF},
@@ -184,12 +183,11 @@ constexpr bool test_serialize_container() noexcept {
     );
 }
 
+template<auto serialize_fn> 
 constexpr bool test_serialize_aggregate() noexcept {
-    using native = stse::detail::NativeEndian;
-
     bool flat_compact = TestExecutor{
         "detail::serialize_aggregate<FlatCompactAggregate_3b>",
-        &validate_aggregate_serialization<FlatCompactAggregate_3b, native>
+        &validate_aggregate_serialization<FlatCompactAggregate_3b, serialize_fn>
     }
     .run_single(
         FlatCompactAggregate_3b{0x80, 0xFF, 0x40},
@@ -198,7 +196,7 @@ constexpr bool test_serialize_aggregate() noexcept {
 
     bool flat_internal_padded = TestExecutor{
         "detail::serialize_aggregate<FlatInternalPaddedAggregate_8b>",
-        &validate_aggregate_serialization<FlatInternalPaddedAggregate_8b, native>
+        &validate_aggregate_serialization<FlatInternalPaddedAggregate_8b, serialize_fn>
     }
     .run_single(
         FlatInternalPaddedAggregate_8b{0x80, 0xFF, 0x4012'3456},
@@ -207,7 +205,7 @@ constexpr bool test_serialize_aggregate() noexcept {
 
     bool with_compact_array = TestExecutor{
         "detail::serialize_aggregate<WithCompactArray_4b>",
-        &validate_aggregate_serialization<WithCompactArray_4b, native>
+        &validate_aggregate_serialization<WithCompactArray_4b, serialize_fn>
     }
     .run_single(
         WithCompactArray_4b{0x80, {0xFF, 0x40, 0x12}},
@@ -216,7 +214,7 @@ constexpr bool test_serialize_aggregate() noexcept {
 
     bool nested_compact = TestExecutor{
         "detail::serialize_aggregate<NestedCompactAggregate_5b>",
-        &validate_aggregate_serialization<NestedCompactAggregate_5b, native>
+        &validate_aggregate_serialization<NestedCompactAggregate_5b, serialize_fn>
     }
     .run_single(
         NestedCompactAggregate_5b{{0xFF, 0x40, 0x12}, 0x80, 0xEA},
@@ -225,7 +223,7 @@ constexpr bool test_serialize_aggregate() noexcept {
 
     bool deeply_nested = TestExecutor{
         "detail::serialize_aggregate<DeeplyNestedAggregate_16b>",
-        &validate_aggregate_serialization<DeeplyNestedAggregate_16b, native>
+        &validate_aggregate_serialization<DeeplyNestedAggregate_16b, serialize_fn>
     }
     .run_single(
         DeeplyNestedAggregate_16b{{{0xFF, 0x40, 0x12}, 0x80, 0xEA}, 0xDEADBEEFCAFEBABE},
@@ -235,9 +233,16 @@ constexpr bool test_serialize_aggregate() noexcept {
         )
     );
 
-    bool skipped_pointer = TestExecutor{
+    return flat_compact && flat_internal_padded 
+        && with_compact_array 
+        && nested_compact && deeply_nested;
+}
+
+template<auto serialize_fn> 
+constexpr bool test_serialize_annotated_aggregate() noexcept {
+   bool skipped_pointer = TestExecutor{
         "detail::serialize_aggregate<WithSkippedPointer_2w>",
-        &validate_aggregate_serialization<WithSkippedPointer_2w, native>
+        &validate_aggregate_serialization<WithSkippedPointer_2w, serialize_fn>
     }
     .run_single(
         WithSkippedPointer_2w{0xBE, nullptr},
@@ -249,7 +254,7 @@ constexpr bool test_serialize_aggregate() noexcept {
     if constexpr (sizeof(void*) == 4) {
         ignored_pointer = TestExecutor{
             "detail::serialize_aggregate<WithIgnoredPointer_2w>",
-            &validate_aggregate_serialization<WithIgnoredPointer_2w, native>
+            &validate_aggregate_serialization<WithIgnoredPointer_2w, serialize_fn>
         }
         .run_single(
             WithIgnoredPointer_2w{0xBE, nullptr},
@@ -258,7 +263,7 @@ constexpr bool test_serialize_aggregate() noexcept {
     } else {
         ignored_pointer = TestExecutor{
             "detail::serialize_aggregate<WithIgnoredPointer_2w>",
-            &validate_aggregate_serialization<WithIgnoredPointer_2w, native>
+            &validate_aggregate_serialization<WithIgnoredPointer_2w, serialize_fn>
         }
         .run_single(
             WithIgnoredPointer_2w{0xBE, nullptr},
@@ -266,14 +271,60 @@ constexpr bool test_serialize_aggregate() noexcept {
         );
     }
 
-    return flat_compact && flat_internal_padded 
-        && with_compact_array 
-        && nested_compact && deeply_nested
-        && skipped_pointer && ignored_pointer;
+    return skipped_pointer && ignored_pointer;
 }
 
+inline constexpr auto serialize_static_container = [](
+    std::span<std::byte> destination, 
+    const auto& source
+) {
+    stse::detail::serialize_static_container(destination, source, stse::native_endian);
+};
+
+inline constexpr auto serialize_aggregate = [](
+    std::span<std::byte> destination, 
+    const auto& source
+) {
+    stse::detail::serialize_aggregate(destination, source, stse::native_endian);
+};
+
+inline constexpr auto serialize_flat = [](
+    std::span<std::byte> destination, 
+    const auto& source
+) {
+    stse::detail::serialize_flat(destination, source);
+};
+
+inline constexpr auto serialize_final = [](
+    std::span<std::byte> destination, 
+    const auto& source
+) {
+    stse::detail::serialize(destination, source, stse::native_endian);
+};
+
+inline constexpr auto test_serialize_container_base  = test_serialize_container<serialize_static_container>;
+inline constexpr auto test_serialize_container_flat  = test_serialize_container<serialize_flat>;
+inline constexpr auto test_serialize_container_final = test_serialize_container<serialize_final>;
+
+inline constexpr auto test_serialize_aggregate_base  = test_serialize_aggregate<serialize_aggregate>;
+inline constexpr auto test_serialize_aggregate_flat  = test_serialize_aggregate<serialize_flat>;
+inline constexpr auto test_serialize_aggregate_final = test_serialize_aggregate<serialize_final>;
+
+inline constexpr auto test_serialize_annotated_aggregate_base  = test_serialize_annotated_aggregate<serialize_aggregate>;
+inline constexpr auto test_serialize_annotated_aggregate_final = test_serialize_annotated_aggregate<serialize_final>;
+
 static_assert(test_serialize_scalar());
-static_assert(test_serialize_container());
-static_assert(test_serialize_aggregate());
+static_assert(test_serialize_container_base());
+
+static_assert(test_serialize_container_base());
+static_assert(test_serialize_container_flat());
+static_assert(test_serialize_container_final());
+
+static_assert(test_serialize_aggregate_base());
+static_assert(test_serialize_aggregate_flat());
+static_assert(test_serialize_aggregate_final());
+
+static_assert(test_serialize_annotated_aggregate_base());
+static_assert(test_serialize_annotated_aggregate_final());
 
 } // namespace stse::tests 

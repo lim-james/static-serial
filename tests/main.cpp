@@ -15,7 +15,13 @@ int main() {
     stse::tests::test_skip_annotation();
     stse::tests::test_ignore_annotation();
     stse::tests::test_serialize_scalar();
-    stse::tests::test_serialize_container();
-    stse::tests::test_serialize_aggregate();
+    stse::tests::test_serialize_container_base();
+    stse::tests::test_serialize_container_flat();
+    stse::tests::test_serialize_container_final();
+    stse::tests::test_serialize_aggregate_base();
+    stse::tests::test_serialize_aggregate_flat();
+    stse::tests::test_serialize_aggregate_final();
+    stse::tests::test_serialize_annotated_aggregate_base();
+    stse::tests::test_serialize_annotated_aggregate_final();
     stse::tests::test_scalar();
 }
