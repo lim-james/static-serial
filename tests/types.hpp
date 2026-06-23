@@ -40,6 +40,12 @@ struct PolymorphicChild : PolymorphicParent { void boo() override; };
 static_assert(std::is_polymorphic_v<PolymorphicParent>);
 static_assert(std::is_polymorphic_v<PolymorphicChild>);
 
+class WithPrivatePointer { int* i = nullptr; };
+struct WithNestedPointer { WithPrivatePointer nested_ptr; };
+struct WithNestedArrayWithPointer {
+    struct { std::array<int*, 5> i{}; } nested_ptr;
+};
+
 /// Struct layout : [a ][b ][c ]
 ///                 [00][01][02]
 /// Struct size   : 3

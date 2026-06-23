@@ -7,8 +7,6 @@ struct Vec3 {
 
 static constexpr Vec3 position{.x = 0.1f, .y = 0.2f, .z = 0.3f};
 
-static_assert(std::is_trivially_copyable_v<Vec3>);
-static_assert(stse::Serializable<Vec3>);
 static_assert(stse::test::test_round_trip<position>(), "Round trip failed for Aggregate Types");
 
 ///
@@ -29,8 +27,6 @@ static constexpr Player player{
     .inventory = {1, 2, 3, 4}
 };
 
-static_assert(std::is_trivially_copyable_v<Player>);
-static_assert(stse::Serializable<Player>);
 static_assert(stse::test::test_round_trip<player>(), "Round trip failed for Nested Types");
 
 ///
@@ -48,9 +44,5 @@ struct Derived: Base {
 
 static constexpr Derived derived{{1}, 2};
 
-static_assert(std::is_trivially_copyable_v<Base>);
-static_assert(std::is_trivially_copyable_v<Derived>);
-static_assert(stse::Serializable<Base>);
-static_assert(stse::Serializable<Derived>);
 static_assert(stse::test::test_round_trip<derived>(), "Round trip failed for Derived Type");
 

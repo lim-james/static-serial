@@ -77,6 +77,7 @@ static_assert(stse::Serializable<WithSkippedParent_3w>);
 static_assert(stse::Serializable<WithIgnoredPointer_2w>);
 
 using serializable_t = int;
+using static_container = std::array<int, 10>;
 
 static_assert(false == std::is_trivially_copyable_v<std::string>);
 static_assert(false == std::is_trivially_copyable_v<std::vector<serializable_t>>);
@@ -93,12 +94,26 @@ static_assert(false == std::is_trivially_copyable_v<std::multimap<serializable_t
 static_assert(false == std::is_trivially_copyable_v<std::unordered_map<serializable_t,serializable_t>>);
 static_assert(false == std::is_trivially_copyable_v<std::unordered_multimap<serializable_t,serializable_t>>);
 
-static_assert(false == stse::Serializable<std::stack<serializable_t>>);
-static_assert(false == stse::Serializable<std::queue<serializable_t>>);
-static_assert(false == stse::Serializable<std::priority_queue<serializable_t>>);
+static_assert(false == std::is_trivially_copyable_v<std::tuple<serializable_t>>);
+static_assert(false == std::is_trivially_copyable_v<std::pair<serializable_t,serializable_t>>);
+static_assert(false == std::is_trivially_copyable_v<std::priority_queue<int, static_container>>);
 
-static_assert(false == stse::Serializable<std::span<serializable_t>>);
+static_assert(false == std::is_trivially_copyable_v<std::stack<serializable_t>>);
+static_assert(false == std::is_trivially_copyable_v<std::queue<serializable_t>>);
+static_assert(false == std::is_trivially_copyable_v<std::priority_queue<serializable_t>>);
 
+
+static_assert(false == stse::Serializable<WithPrivatePointer>);
+static_assert(false == stse::Serializable<WithNestedPointer>);
+static_assert(false == stse::Serializable<WithNestedArrayWithPointer>);
+
+/// open to re-exploring this in the future for C support
+/// currently is_serializable decays T - char[] -> char* 
+/// but currently in alignment w/ modern C++ opt for 
+/// std::array instead
+
+static_assert(false == stse::Serializable<char[1]>);
+static_assert(false == stse::Serializable<decltype("Hello")>);
 static_assert(false == stse::Serializable<std::string>);
 static_assert(false == stse::Serializable<std::string_view>);
 
@@ -121,6 +136,9 @@ static_assert(false == stse::Serializable<std::stack<serializable_t>>);
 static_assert(false == stse::Serializable<std::queue<serializable_t>>);
 static_assert(false == stse::Serializable<std::priority_queue<serializable_t>>);
 
-static_assert(false == stse::Serializable<std::span<serializable_t>>);
+static_assert(false == stse::Serializable<std::tuple<serializable_t>>);
+static_assert(false == stse::Serializable<std::pair<serializable_t,serializable_t>>);
+static_assert(false == stse::Serializable<std::priority_queue<int, static_container>>);
 
+static_assert(false == stse::Serializable<std::span<serializable_t>>);
 }

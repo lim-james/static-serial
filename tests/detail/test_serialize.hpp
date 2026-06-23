@@ -311,6 +311,7 @@ inline constexpr auto test_serialize_aggregate_flat  = test_serialize_aggregate<
 inline constexpr auto test_serialize_aggregate_final = test_serialize_aggregate<serialize_final>;
 
 inline constexpr auto test_serialize_annotated_aggregate_base  = test_serialize_annotated_aggregate<serialize_aggregate>;
+inline constexpr auto test_serialize_annotated_aggregate_flat  = test_serialize_annotated_aggregate<serialize_flat>;
 inline constexpr auto test_serialize_annotated_aggregate_final = test_serialize_annotated_aggregate<serialize_final>;
 
 static_assert(test_serialize_scalar());
