@@ -10,7 +10,7 @@
 namespace stse::tests {
 
 template<Scalar T, stse::detail::EndianType Endian>
-constexpr bool validate_scalar_serialization(T item, std::span<std::byte> raw_bytes) {
+constexpr bool validate_scalar_serialization(T item, std::span<std::byte> raw_bytes) noexcept {
     std::array<std::byte, sizeof(T)> buffer{};
     stse::detail::serialize_scalar(buffer, item, Endian{});
     return std::ranges::equal(raw_bytes, buffer);
@@ -20,7 +20,7 @@ template<typename T, std::size_t N, auto serialize_fn>
 constexpr bool validate_container_serialization(
     std::array<T, N> items, 
     std::span<std::byte> raw_bytes
-) {
+) noexcept {
     static_assert(StaticContainer<decltype(items)>);
     std::array<std::byte, stse::detail::raw_size<T> * N> buffer{};
     serialize_fn(buffer, items);
@@ -31,7 +31,7 @@ template<Aggregate T, auto serialize_fn>
 constexpr bool validate_aggregate_serialization(
     T items, 
     std::span<std::byte> raw_bytes
-) {
+) noexcept {
     std::array<std::byte, stse::detail::raw_size<T>> buffer{};
     serialize_fn(buffer, items);
     return std::ranges::equal(raw_bytes, buffer);

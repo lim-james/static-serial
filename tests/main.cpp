@@ -6,6 +6,7 @@
 #include "tests/detail/test_layout.hpp"
 #include "tests/detail/test_concepts.hpp"
 #include "tests/detail/test_serialize.hpp"
+#include "tests/detail/test_deserialize.hpp"
 #include "tests/test_annotation.hpp"
 #include "tests/test_executor.hpp"
 #include "tests/test_scalar.hpp"
@@ -23,5 +24,14 @@ int main() {
     stse::tests::test_serialize_aggregate_final();
     stse::tests::test_serialize_annotated_aggregate_base();
     stse::tests::test_serialize_annotated_aggregate_final();
+    stse::tests::test_deserialize_scalar();
+    stse::tests::test_deserialize_container_base();
+    stse::tests::test_deserialize_container_flat();
+    stse::tests::test_deserialize_container_final();
+    stse::tests::test_deserialize_aggregate_base();
+    stse::tests::test_deserialize_aggregate_flat();
+    stse::tests::test_deserialize_aggregate_final();
+    stse::tests::test_deserialize_annotated_aggregate_base();
+    stse::tests::test_deserialize_annotated_aggregate_final();
     stse::tests::test_scalar();
 }
