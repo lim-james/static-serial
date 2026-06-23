@@ -30,7 +30,7 @@ template<Scalar T, EndianType Endian>
 constexpr std::span<const std::byte> deserialize_scalar(
     T& destination, 
     std::span<const std::byte> source,
-    [[maybe_unused]] Endian endianness
+    Endian
 ) {
     static constexpr std::size_t value_byte_count = raw_size<T>;
     using value_buffer_t = std::array<std::byte, value_byte_count>;
@@ -39,7 +39,7 @@ constexpr std::span<const std::byte> deserialize_scalar(
     const auto bytes = source.first(value_byte_count);
     constexpr_memcpy(buffer.data(), bytes.data(), value_byte_count);
 
-    destination = [&buffer]() {
+    destination = [&buffer] {
         if constexpr (Endian::endian == NativeEndian::endian) {
             return std::bit_cast<T>(buffer);
         } else if constexpr (std::is_integral_v<T>) {
