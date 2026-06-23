@@ -9,7 +9,7 @@
 
 namespace stse::tests {
 
-template<typename T, stse::detail::EndianType Endian>
+template<Scalar T, stse::detail::EndianType Endian>
 constexpr bool validate_scalar_serialization(T item, std::span<std::byte> raw_bytes) {
     std::array<std::byte, sizeof(T)> buffer{};
     stse::detail::serialize_scalar(buffer, item, Endian{});
@@ -21,7 +21,10 @@ constexpr bool validate_container_serialization(
     std::array<T, N> items, 
     std::span<std::byte> raw_bytes
 ) {
-    std::array<std::byte, stse::detail::raw_size<T> * N> buffer{};
+    using container_t = std::array<std::byte, stse::detail::raw_size<T> * N>;
+    static_assert(StaticContainer<container_t>);
+
+    auto buffer = container_t{};
     stse::detail::serialize_static_container(buffer, items, Endian{});
     return std::ranges::equal(raw_bytes, buffer);
 }
