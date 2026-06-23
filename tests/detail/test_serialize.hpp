@@ -205,7 +205,71 @@ constexpr bool test_serialize_aggregate() noexcept {
         make_bytes(0x80, 0xFF, 0x56, 0x34, 0x12, 0x40)
     );
 
-    return flat_compact && flat_internal_padded;
+    bool with_compact_array = TestExecutor{
+        "detail::serialize_aggregate<WithCompactArray_4b>",
+        &validate_aggregate_serialization<WithCompactArray_4b, native>
+    }
+    .run_single(
+        WithCompactArray_4b{0x80, {0xFF, 0x40, 0x12}},
+        make_bytes(0x80, 0xFF, 0x40, 0x12)
+    );
+
+    bool nested_compact = TestExecutor{
+        "detail::serialize_aggregate<NestedCompactAggregate_5b>",
+        &validate_aggregate_serialization<NestedCompactAggregate_5b, native>
+    }
+    .run_single(
+        NestedCompactAggregate_5b{{0xFF, 0x40, 0x12}, 0x80, 0xEA},
+        make_bytes(0xFF, 0x40, 0x12, 0x80, 0xEA)
+    );
+
+    bool deeply_nested = TestExecutor{
+        "detail::serialize_aggregate<DeeplyNestedAggregate_16b>",
+        &validate_aggregate_serialization<DeeplyNestedAggregate_16b, native>
+    }
+    .run_single(
+        DeeplyNestedAggregate_16b{{{0xFF, 0x40, 0x12}, 0x80, 0xEA}, 0xDEADBEEFCAFEBABE},
+        make_bytes(
+            0xFF, 0x40, 0x12, 0x80, 0xEA,
+            0xBE, 0xBA, 0xFE, 0xCA, 0xEF, 0xBE, 0xAD, 0xDE
+        )
+    );
+
+    bool skipped_pointer = TestExecutor{
+        "detail::serialize_aggregate<WithSkippedPointer_2w>",
+        &validate_aggregate_serialization<WithSkippedPointer_2w, native>
+    }
+    .run_single(
+        WithSkippedPointer_2w{0xBE, nullptr},
+        make_bytes(0xBE)
+    );
+
+    bool ignored_pointer;
+
+    if constexpr (sizeof(void*) == 4) {
+        ignored_pointer = TestExecutor{
+            "detail::serialize_aggregate<WithIgnoredPointer_2w>",
+            &validate_aggregate_serialization<WithIgnoredPointer_2w, native>
+        }
+        .run_single(
+            WithIgnoredPointer_2w{0xBE, nullptr},
+            make_bytes(0xBE, 0x00, 0x00, 0x00, 0x00)
+        );
+    } else {
+        ignored_pointer = TestExecutor{
+            "detail::serialize_aggregate<WithIgnoredPointer_2w>",
+            &validate_aggregate_serialization<WithIgnoredPointer_2w, native>
+        }
+        .run_single(
+            WithIgnoredPointer_2w{0xBE, nullptr},
+            make_bytes(0xBE, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00)
+        );
+    }
+
+    return flat_compact && flat_internal_padded 
+        && with_compact_array 
+        && nested_compact && deeply_nested
+        && skipped_pointer && ignored_pointer;
 }
 
 static_assert(test_serialize_scalar());

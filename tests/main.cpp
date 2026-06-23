@@ -19,4 +19,3 @@ int main() {
     stse::tests::test_serialize_aggregate();
     stse::tests::test_scalar();
 }
-
