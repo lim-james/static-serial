@@ -1,5 +1,7 @@
 # Static Serial
 
+[![CI](https://github.com/lim-james/static-serial/actions/workflows/ci.yml/badge.svg)](https://github.com/lim-james/static-serial/actions/workflows/ci.yml)
+
 `C++26` `Reflections` `GCC16`
 
 Reflection-based binary serializer for fixed-size wire formats.
