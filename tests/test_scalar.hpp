@@ -49,14 +49,16 @@ static_assert(round_trip_bool());
 static_assert(round_trip_unscoped_enum());
 static_assert(round_trip_scoped_enum());
 
-void test_scalar() noexcept {
-    round_trip_char();
-    round_trip_int();
-    round_trip_double();
-    round_trip_float();
-    round_trip_bool();
-    round_trip_unscoped_enum();
-    round_trip_scoped_enum();
+bool test_scalar() noexcept {
+    bool all_passed = true; 
+    all_passed &= round_trip_char();
+    all_passed &= round_trip_int();
+    all_passed &= round_trip_double();
+    all_passed &= round_trip_float();
+    all_passed &= round_trip_bool();
+    all_passed &= round_trip_unscoped_enum();
+    all_passed &= round_trip_scoped_enum();
+    return all_passed;
 }
 
 }
