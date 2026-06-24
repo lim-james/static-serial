@@ -1,16 +1,39 @@
-.PHONY: release debug bench test clean
+.PHONY: all test_debug test_release test_aubsan benchmark demo clean
 
-release:
-	cmake --preset release && cmake --build --preset release
+# Configure + build + run tests (debug)
+test_debug:
+	cmake --preset test_debug
+	cmake --build --preset test_debug
+	./build/test_debug/tests
 
-debug:
-	cmake --preset debug && cmake --build --preset debug
+# Configure + build + run tests (release)
+test_release:
+	cmake --preset test_release
+	cmake --build --preset test_release
+	./build/test_release/tests
 
-bench:
-	cmake --preset bench && cmake --build --preset bench
+# Configure + build + run tests (ASan + UBSan)
+test_aubsan:
+	cmake --preset test_aubsan
+	cmake --build --preset test_aubsan
+	ASAN_OPTIONS=halt_on_error=1:abort_on_error=1 \
+	UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 \
+	./build/test_aubsan/tests
 
-test: debug
-	./build/debug/tests
+# Configure + build benchmarks
+benchmark:
+	cmake --preset benchmark
+	cmake --build --preset benchmark
 
+# Configure + build demo
+demo:
+	cmake --preset demo
+	cmake --build --preset demo
+	./build/demo/demo
+
+# Clean all build directories
 clean:
-	rm -rf build
+	rm -rf build/
+
+# Default: run all test presets
+all: test_debug test_release test_aubsan

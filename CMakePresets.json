@@ -4,27 +4,99 @@
     {
       "name": "base",
       "hidden": true,
-      "binaryDir": "${sourceDir}/build/${presetName}"
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "g++-16",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
     },
     {
-      "name": "release",
+      "name": "test_debug",
+      "displayName": "Test (Debug)",
+      "description": "Tests with no optimization, contracts observed, gdb-friendly",
       "inherits": "base",
-      "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "STSE_SANITIZE": "OFF",
+        "STSE_BUILD_BENCHMARKS": "OFF",
+        "STSE_CONTRACT_SEMANTIC": "ignore"
+      }
     },
     {
-      "name": "debug",
+      "name": "test_release",
+      "displayName": "Test (Release)",
+      "description": "Tests with -O2, contracts ignored — closest to user-facing behaviour",
       "inherits": "base",
-      "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug" }
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "STSE_SANITIZE": "OFF",
+        "STSE_BUILD_BENCHMARKS": "OFF",
+        "STSE_CONTRACT_SEMANTIC": "ignore"
+      }
     },
     {
-      "name": "bench",
-      "inherits": "release",
-      "cacheVariables": { "STSE_BUILD_BENCHMARKS": "ON" }
+      "name": "test_aubsan",
+      "displayName": "Test (ASan + UBSan)",
+      "description": "Tests with -O1, AddressSanitizer and UBSanitizer enabled",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "STSE_SANITIZE": "ON",
+        "STSE_BUILD_BENCHMARKS": "OFF",
+        "STSE_CONTRACT_SEMANTIC": "ignore"
+      }
+    },
+    {
+      "name": "benchmark",
+      "displayName": "Benchmark",
+      "description": "Benchmark targets only, -O3 -march=native, contracts ignored",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "STSE_SANITIZE": "OFF",
+        "STSE_BUILD_BENCHMARKS": "ON",
+        "STSE_CONTRACT_SEMANTIC": "ignore"
+      }
+    },
+    {
+      "name": "demo",
+      "displayName": "Demo",
+      "description": "Demo target only, -O2, contracts observed",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "STSE_SANITIZE": "OFF",
+        "STSE_BUILD_BENCHMARKS": "OFF",
+        "STSE_CONTRACT_SEMANTIC": "ignore"
+      }
     }
   ],
   "buildPresets": [
-    { "name": "release", "configurePreset": "release" },
-    { "name": "debug", "configurePreset": "debug" },
-    { "name": "bench", "configurePreset": "bench" }
+    {
+      "name": "test_debug",
+      "configurePreset": "test_debug",
+      "targets": ["tests"]
+    },
+    {
+      "name": "test_release",
+      "configurePreset": "test_release",
+      "targets": ["tests"]
+    },
+    {
+      "name": "test_aubsan",
+      "configurePreset": "test_aubsan",
+      "targets": ["tests"]
+    },
+    {
+      "name": "benchmark",
+      "configurePreset": "benchmark",
+      "targets": ["bench_stse", "bench_handrolled", "bench_naive_memcpy", "bench_protobuf"]
+    },
+    {
+      "name": "demo",
+      "configurePreset": "demo",
+      "targets": ["demo"]
+    }
   ]
 }
