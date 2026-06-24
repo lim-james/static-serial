@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@4
+
+      - name: Install GCC16
+        run: |
+          sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+          sudo apt-get update -y
+          sudo apt-get install -y gcc-16 g++-16
+
+      - name: Build and run tests
+        run: make test
+        env:
+          CC: gcc-16
+          CXX: g++-16
