@@ -3,12 +3,12 @@
 #include "types.hpp"
 #include "concepts.hpp"
 #include "meta_utils.hpp"
-#include "memory.hpp"
 #include "layout.hpp"
 
 #include <span>
 #include <cstddef>
 #include <utility>
+#include <algorithm>
 
 namespace stse::detail {
 
@@ -37,7 +37,7 @@ constexpr std::span<const std::byte> deserialize_scalar(
     value_buffer_t buffer;
 
     const auto bytes = source.first(value_byte_count);
-    constexpr_memcpy(buffer.data(), bytes.data(), value_byte_count);
+    std::copy_n(bytes.data(), value_byte_count, buffer.data());
 
     destination = [&buffer] {
         if constexpr (Endian::endian == NativeEndian::endian) {
@@ -90,7 +90,7 @@ constexpr std::span<const std::byte> deserialize_flat(
 ) { 
     const auto read_bytes = [source](std::byte* memory_layout) {
         template for (constexpr auto [struct_offset, wire_offset, count]: byte_layout_of<T>) {
-            constexpr_memcpy(memory_layout + struct_offset, source.data() + wire_offset, count);
+            std::copy_n(source.data() + wire_offset, count, memory_layout + struct_offset);
         }
     };
 

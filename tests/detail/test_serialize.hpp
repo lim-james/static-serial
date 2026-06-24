@@ -2,6 +2,7 @@
 
 #include "tests/types.hpp"
 #include "tests/utils.hpp"
+#include "tests/test_executor.hpp" 
 
 #include "stse/stse.hpp"
 

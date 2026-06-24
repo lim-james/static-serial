@@ -3,13 +3,13 @@
 #include "types.hpp"
 #include "concepts.hpp"
 #include "meta_utils.hpp"
-#include "memory.hpp"
 #include "layout.hpp"
 
 #include <span>
 #include <cstddef>
 #include <type_traits>
 #include <utility>
+#include <algorithm>
 
 namespace stse::detail {
 
@@ -47,7 +47,7 @@ constexpr std::span<std::byte> serialize_scalar(
         }
     }();
 
-    constexpr_memcpy(destination.data(), bytes.data(), value_byte_count);
+    std::copy_n(bytes.data(), value_byte_count, destination.data());
 
     return destination.subspan(value_byte_count);
 }
@@ -85,10 +85,10 @@ template<Serializable T>
 constexpr std::span<std::byte> serialize_flat(std::span<std::byte> destination, const T& source) {
     const auto write_bytes = [destination](const std::byte* memory_layout) {
         template for (constexpr auto [struct_offset, wire_offset, count]: byte_layout_of<T>) {
-            constexpr_memcpy(
-                destination.data() + wire_offset,
+            std::copy_n(
                 memory_layout + struct_offset,
-                count
+                count,
+                destination.data() + wire_offset
             );
         }
     };

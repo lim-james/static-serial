@@ -1,7 +1,6 @@
 #include "stse/stse.hpp"
 
 #include "tests/types.hpp"
-#include "tests/detail/test_memory.hpp"
 #include "tests/detail/test_meta_utils.hpp"
 #include "tests/detail/test_layout.hpp"
 #include "tests/detail/test_concepts.hpp"
@@ -16,7 +15,6 @@ enum class ExitCode: int { SUCCESS = 0, FAILED = 1 };
 int main() {
     bool all_passed = true;
 
-    all_passed &= stse::tests::test_constexpr_memcpy();
     all_passed &= stse::tests::test_skip_annotation();
     all_passed &= stse::tests::test_ignore_annotation();
     all_passed &= stse::tests::test_serialize_scalar();
