@@ -6,6 +6,7 @@ _deps/
 
 # CMake generated files
 CMakeCache.txt
+Makefile
 CMakeFiles/
 CMakeScripts/
 CMakeUserPresets.json
