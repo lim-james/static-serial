@@ -74,33 +74,29 @@ g++-16 -std=c++26 -freflection -fcontracts -fcontract-evaluation-semantic=observ
 
 **`serialize`** - serializes one or more objects into a stack-allocated byte array
 ```cpp
-template<detail::EndianType Endian, detail::Serializable... Args> 
-[[nodiscard]] constexpr auto serialize(
-    Endian endianness,
-    const Args&... data
-) -> std::array<std::byte, serial_size_v<Args...>>;
+UserDefinedType a, b, c;
 
-template<detail::Serializable... Args> 
-[[nodiscard]] constexpr auto serialize(
-    const Args&... data
-) -> std::array<std::byte, serial_size_v<Args...>>;
+auto raw_bytes_of_a  = stse::serialize(a);
+auto raw_bytes_of_bc = stse::serialize(b, c);
+
+// endian overloads
+auto raw_bytes_of_a_big_endian  = stse::serialize(stse::big_endian, a);
+auto raw_bytes_of_bc_big_endian = stse::serialize(stse::big_endian, b, c);
 ```
 
-**`serialize_advance`** - serializes into an existing span, returning the 
-remaining span after the written bytes.
+**`serialize_advance`** - serializes into an existing contiguous container, returning 
+span after the written bytes
 ```cpp
-template<detail::EndianType Endian, detail::Serializable... Args> 
-constexpr auto serialize_advance(
-    Endian endianness,
-    const std::span<std::byte> destination,
-    const Args&... data
-) -> std::span<std::byte>;
+UserDefinedType a, b, c;
 
-template<detail::Serializable... Args> 
-constexpr auto serialize_advance(
-    const std::span<std::byte> destination,
-    const Args&... data
-) -> std::span<std::byte>;
+std::array<std::byte, 1024> write_buffer{};
+std::span<std::byte> write_ptr;
+write_ptr = stse::serialize_advance(write_buffer, a);
+write_ptr = stse::serialize_advance(write_ptr,    b, c);
+
+// endian overloads
+write_ptr = stse::serialize_advance(stse::big_endian, write_buffer, a);
+write_ptr = stse::serialize_advance(stse::big_endian, write_ptr,    b, c);
 ```
 
 **`deserialize`** - deserializes one or more objects from a byte span, returning
