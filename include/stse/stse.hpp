@@ -71,7 +71,11 @@ constexpr auto serialize_advance(
 
 template<detail::Serializable... Args>
 struct DeserializeResult {
-    std::tuple<Args...> objects;
+    std::conditional_t<
+        sizeof...(Args) == 1, 
+        Args...[0], 
+        std::tuple<Args...>
+    > result;
     std::span<const std::byte> remaining;
 };
 
@@ -89,8 +93,8 @@ template<detail::Serializable... Args, detail::EndianType Endian>
     auto remaining_ptr = data;
     ((remaining_ptr = detail::deserialize(parsed, remaining_ptr, endianness)), ...);
 
-    return DeserializeResult{
-        .objects   = parsed_objects, 
+    return DeserializeResult<Args...>{
+        .result    = {parsed...}, 
         .remaining = remaining_ptr
     };
 }

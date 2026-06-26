@@ -74,68 +74,55 @@ g++-16 -std=c++26 -freflection -fcontracts -fcontract-evaluation-semantic=observ
 
 **`serialize`** - serializes one or more objects into a stack-allocated byte array
 ```cpp
-template<detail::EndianType Endian, detail::Serializable... Args> 
-[[nodiscard]] constexpr auto serialize(
-    Endian endianness,
-    const Args&... data
-) -> std::array<std::byte, serial_size_v<Args...>>;
+UserDefinedType a, b, c;
 
-template<detail::Serializable... Args> 
-[[nodiscard]] constexpr auto serialize(
-    const Args&... data
-) -> std::array<std::byte, serial_size_v<Args...>>;
+auto raw_bytes_of_a  = stse::serialize(a);
+auto raw_bytes_of_bc = stse::serialize(b, c);
+
+// endian overloads
+auto raw_bytes_of_a_big_endian  = stse::serialize(stse::big_endian, a);
+auto raw_bytes_of_bc_big_endian = stse::serialize(stse::big_endian, b, c);
 ```
 
-**`serialize_advance`** - serializes into an existing span, returning the 
-remaining span after the written bytes.
+**`serialize_advance`** - serializes into an existing contiguous container, returning 
+span after the written bytes
 ```cpp
-template<detail::EndianType Endian, detail::Serializable... Args> 
-constexpr auto serialize_advance(
-    Endian endianness,
-    const std::span<std::byte> destination,
-    const Args&... data
-) -> std::span<std::byte>;
+UserDefinedType a, b, c;
 
-template<detail::Serializable... Args> 
-constexpr auto serialize_advance(
-    const std::span<std::byte> destination,
-    const Args&... data
-) -> std::span<std::byte>;
+std::array<std::byte, 1024> write_buffer{};
+std::span<std::byte> write_ptr;
+write_ptr = stse::serialize_advance(write_buffer, a);
+write_ptr = stse::serialize_advance(write_ptr,    b, c);
+
+// endian overloads
+write_ptr = stse::serialize_advance(stse::big_endian, write_buffer, a);
+write_ptr = stse::serialize_advance(stse::big_endian, write_ptr,    b, c);
 ```
 
-**`deserialize`** - deserializes one or more objects from a byte span, returning
-results and remaining span.
+**`deserialize`** - deserializes one or more objects from a contiguous container, returning
+result(s) and span after read bytes
 ```cpp
-[[nodiscard]] constexpr auto deserialize(
-    Endian endianness,
-    const std::span<const std::byte> data
-) -> DeserializeResult<Args...> 
-    pre(data.size() >= serial_size_v<Args...>);
+std::array<std::byte, 1024> read_buffer;
+auto [a, read_ptr] = stse::deserialize<UserDefinedType>(read_buffer);
+auto [b, c] = stse::deserialize<UserDefinedType>(read_ptr).result;
 
-template<detail::Serializable... Args>
-[[nodiscard]] constexpr auto deserialize(
-    const std::span<const std::byte> data
-) -> DeserializeResult<Args...> 
-    pre(data.size() >= serial_size_v<Args...>);
+auto [a, read_ptr] = stse::deserialize<UserDefinedType>(stse::big_endian, read_buffer);
+auto [b, c] = stse::deserialize<UserDefinedType>(stse::big_endian, read_ptr).result;
 ```
 
 **`deserialize_advance`** — deserializes into existing objects, returning 
-remaining span.
+span after read bytes
 ```cpp
-template<detail::Serializable... Args, detail::EndianType Endian>
-constexpr auto deserialize_advance(
-    Endian endianness,
-    const std::span<const std::byte> data, 
-    Args&... parsed
-) -> std::span<const std::byte> 
-    pre(data.size() >= serial_size_v<Args...>)
+UserDefinedType a, b, c;
 
-template<detail::Serializable... Args>
-constexpr auto deserialize_advance(
-    const std::span<const std::byte> data, 
-    Args&... parsed
-) -> std::span<const std::byte> 
-    pre(data.size() >= serial_size_v<Args...>)
+std::array<std::byte, 1024> read_buffer{};
+std::span<std::byte> read_ptr;
+read_ptr = stse::deserialize_advance(read_buffer, a);
+read_ptr = stse::deserialize_advance(read_ptr,    b, c);
+
+// endian overloads
+read_ptr = stse::deserialize_advance(stse::big_endian, read_buffer, a);
+read_ptr = stse::deserialize_advance(stse::big_endian, read_ptr,    b, c);
 ```
 
 **Skip & Ignore Member Annotation**
@@ -150,21 +137,22 @@ inline constexpr auto ignore = ignoreserialization{};
 
 **Properties**
 ```cpp
-template<typename T>
-inline constexpr bool is_serializable_v;
+// checks if type is serializable
+template<typename T> inline constexpr bool is_serializable_v;
 
-template<typename T>
-inline constexpr std::size_t serial_size_v;
+// returns wire size in bytes of type
+template<typename T> inline constexpr std::size_t serial_size_v; 
 ```
 
 **Endian Specifiers**
 ```cpp
-inline constexpr BigEndian    big_endian{};
-inline constexpr LittleEndian little_endian{};
-inline constexpr NativeEndian native_endian{};
+_ = stse::serialize(stse::big_endian,    a);
+_ = stse::serialize(stse::litte_endian,  a);
+_ = stse::serialize(stse::native_endian, a);
 ```
 
 **Return Schema**
+> Planning to deprecate this.
 ```cpp
 template<typename T>
 [[nodiscard]] std::string schema();
@@ -172,9 +160,13 @@ template<typename T>
 
 **Deserialize Return Type**
 ```cpp
-template<typename T>
+template<detail::Serializable... Args>
 struct DeserializeResult {
-    T object;
+    std::conditional_t<
+        sizeof...(Args) == 1, 
+        Args...[0], 
+        std::tuple<Args...>
+    > result;
     std::span<const std::byte> remaining;
 };
 ```
