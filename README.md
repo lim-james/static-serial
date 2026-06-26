@@ -137,21 +137,22 @@ inline constexpr auto ignore = ignoreserialization{};
 
 **Properties**
 ```cpp
-template<typename T>
-inline constexpr bool is_serializable_v;
+// checks if type is serializable
+template<typename T> inline constexpr bool is_serializable_v;
 
-template<typename T>
-inline constexpr std::size_t serial_size_v;
+// returns wire size in bytes of type
+template<typename T> inline constexpr std::size_t serial_size_v; 
 ```
 
 **Endian Specifiers**
 ```cpp
-inline constexpr BigEndian    big_endian{};
-inline constexpr LittleEndian little_endian{};
-inline constexpr NativeEndian native_endian{};
+_ = stse::serialize(stse::big_endian,    a);
+_ = stse::serialize(stse::litte_endian,  a);
+_ = stse::serialize(stse::native_endian, a);
 ```
 
 **Return Schema**
+> Planning to deprecate this.
 ```cpp
 template<typename T>
 [[nodiscard]] std::string schema();
@@ -159,9 +160,13 @@ template<typename T>
 
 **Deserialize Return Type**
 ```cpp
-template<typename T>
+template<detail::Serializable... Args>
 struct DeserializeResult {
-    T object;
+    std::conditional_t<
+        sizeof...(Args) == 1, 
+        Args...[0], 
+        std::tuple<Args...>
+    > result;
     std::span<const std::byte> remaining;
 };
 ```
