@@ -61,9 +61,8 @@ int main() {
     [[maybe_unused]] auto moved_ptr = stse::serialize_advance(raw_bytes, snapshot);
 
 
-    MarketSnapshot restored_snapshot;
-    stse::deserialize_advance(raw_bytes, restored_snapshot);
-    // assert(snapshot == restored_snapshot);
+    auto restored_snapshot = stse::deserialize<MarketSnapshot>(raw_bytes).result;
+    assert(snapshot == restored_snapshot);
 
     std::string schema = stse::schema<MarketSnapshot>();
     std::print("{}", schema);

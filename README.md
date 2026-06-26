@@ -99,39 +99,30 @@ write_ptr = stse::serialize_advance(stse::big_endian, write_buffer, a);
 write_ptr = stse::serialize_advance(stse::big_endian, write_ptr,    b, c);
 ```
 
-**`deserialize`** - deserializes one or more objects from a byte span, returning
-results and remaining span.
+**`deserialize`** - deserializes one or more objects from a contiguous container, returning
+result(s) and span after read bytes
 ```cpp
-[[nodiscard]] constexpr auto deserialize(
-    Endian endianness,
-    const std::span<const std::byte> data
-) -> DeserializeResult<Args...> 
-    pre(data.size() >= serial_size_v<Args...>);
+std::array<std::byte, 1024> read_buffer;
+auto [a, read_ptr] = stse::deserialize<UserDefinedType>(read_buffer);
+auto [b, c] = stse::deserialize<UserDefinedType>(read_ptr).result;
 
-template<detail::Serializable... Args>
-[[nodiscard]] constexpr auto deserialize(
-    const std::span<const std::byte> data
-) -> DeserializeResult<Args...> 
-    pre(data.size() >= serial_size_v<Args...>);
+auto [a, read_ptr] = stse::deserialize<UserDefinedType>(stse::big_endian, read_buffer);
+auto [b, c] = stse::deserialize<UserDefinedType>(stse::big_endian, read_ptr).result;
 ```
 
 **`deserialize_advance`** — deserializes into existing objects, returning 
-remaining span.
+span after read bytes
 ```cpp
-template<detail::Serializable... Args, detail::EndianType Endian>
-constexpr auto deserialize_advance(
-    Endian endianness,
-    const std::span<const std::byte> data, 
-    Args&... parsed
-) -> std::span<const std::byte> 
-    pre(data.size() >= serial_size_v<Args...>)
+UserDefinedType a, b, c;
 
-template<detail::Serializable... Args>
-constexpr auto deserialize_advance(
-    const std::span<const std::byte> data, 
-    Args&... parsed
-) -> std::span<const std::byte> 
-    pre(data.size() >= serial_size_v<Args...>)
+std::array<std::byte, 1024> read_buffer{};
+std::span<std::byte> read_ptr;
+read_ptr = stse::deserialize_advance(read_buffer, a);
+read_ptr = stse::deserialize_advance(read_ptr,    b, c);
+
+// endian overloads
+read_ptr = stse::deserialize_advance(stse::big_endian, read_buffer, a);
+read_ptr = stse::deserialize_advance(stse::big_endian, read_ptr,    b, c);
 ```
 
 **Skip & Ignore Member Annotation**
